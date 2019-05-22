@@ -7,13 +7,14 @@ class DESExposure(DECamExposure):
 		DECamExposure.__init__(self,expnum, ra, dec, mjd_mid, band)
 
 	def probDetection(self, m):
-
+		return None
 
 class DES(Survey):
 	def __init__(self, expnum, ra, dec, mjd, band, release, m50 = None, c = None, k = None):
 		self.release = release
 		track ='{}.exposure.positions.fits'.format(self.release)
-		Survey.__init__.(self, ra, dec, mjd, band, track)
+		corners = '{}.ccdcorners.fits'.format(self.release)
+		Survey.__init__(self, expnum, ra, dec, mjd, band, track = track, corners = corners)
 
 		if m50 == None:
 			self.m50 = len(self.ra) * [None]

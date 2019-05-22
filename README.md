@@ -7,7 +7,8 @@ This repository has the basis of what will eventually become the DES TNO catalog
 Python:
 - `numpy`
 - `astropy`
-- `os`, `itertools` and `subprocess` (these should be standard Python, right?)
+- `scipy`
+
 External:
 - `orbitspp` (https://github.com/gbernstein/orbitspp) and dependencies
 
