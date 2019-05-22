@@ -13,4 +13,4 @@ External:
 - `orbitspp` (https://github.com/gbernstein/orbitspp) and dependencies
 
 #### Installation
-Right now, just make sure your environment has a `ORBITSPP` variable pointing to the `bin` folder of your `orbitspp` installation. 
+Right now, just make sure your environment has a `ORBITSPP` variable pointing to the `bin` folder of your `orbitspp` installation. This is not yet a proper Python package, so you'll have to manually add the `des` and `tno` folders to your path.
