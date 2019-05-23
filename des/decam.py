@@ -22,7 +22,7 @@ class DECamExposure:
 		'''
 		ra_list = np.array(ra_list)
 		dec_list = np.array(dec_list)
-		ra_list[np.where(ra > 180)] = ra_list[np.where(ra_list > 180)] - 360
+		ra_list[np.where(ra_list > 180)] = ra_list[np.where(ra_list > 180)] - 360
 	
 	
 		c_dec_0 = np.cos(np.pi*self.dec/180.)
