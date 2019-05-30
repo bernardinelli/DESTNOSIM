@@ -1,6 +1,6 @@
 from decam import *
 import os 
-
+import astropy.table as tb
 
 class DESExposure(DECamExposure):
 	def __init__(self, expnum, ra, dec, mjd_mid, band, m50 = None, c = None, k = None):
@@ -10,11 +10,17 @@ class DESExposure(DECamExposure):
 		return None
 
 class DES(Survey):
-	def __init__(self, expnum, ra, dec, mjd, band, release, m50 = None, c = None, k = None):
+	def __init__(self, release, m50 = None, c = None, k = None):
+		orbitspp = os.getenv('ORBITSPP')
+
 		self.release = release
-		track ='{}.exposure.positions.fits'.format(self.release)
-		corners = '{}.ccdcorners.fits'.format(self.release)
-		Survey.__init__(self, expnum, ra, dec, mjd, band, track = track, corners = corners)
+		track ='{}/../data/{}.exposure.positions.fits'.format(orbitspp, self.release)
+		corners = '{}/../data/{}.ccdcorners.fits'.format(orbitspp, self.release)
+		
+		exp = tb.Table.read(track)
+
+		Survey.__init__(self, exp['expnum'], exp['ra'], exp['dec'], exp['mjd_mid'], exp['filter'], track = track, corners = corners)
+		self.exp = exp
 
 		if m50 == None:
 			self.m50 = len(self.ra) * [None]

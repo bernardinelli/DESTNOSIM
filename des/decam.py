@@ -38,6 +38,19 @@ class DECamExposure:
 		y = (c_dec_0*s_dec - s_dec_0*c_dec*c_ra)/cos_c
 
 		return 180*x/np.pi, 180*y/np.pi
+
+	def inverseGnomonic(self, x, y):
+		'''
+		Inverts the Gnomonic projection centered on the exposure
+		'''
+		x = np.array(x) * np.pi/180 
+		y = np.array(y) * np.pi/180
+		ra_rad = np.pi*self.ra/180.
+		dec_rad = np.pi*self.dec/180.
+		den = np.sqrt(1 + x**2 + y**2)
+		sin_dec = (np.sin(dec_rad) + y*np.cos(dec_rad))/den
+		sin_ra = x/(np.cos(dec_rad) * den)
+		return 180*(np.arcsin(sin_ra))/np.pi + ra_rad, 180*np.arcsin(sin_dec)/np.pi 
  
 
 	def checkInCCD(self, ra_list, dec_list, ccd_tree = None):
@@ -88,9 +101,4 @@ class Survey:
 		self.exposures = {}
 		for ra,dec,mjd,n,b in zip(self.ra, self.dec, self.mjd, self.expnum, self.band):
 			self.exposures[n] = DECamExposure(n, ra, dec, mjd, b)
-
-	def processPopulation(self, population):
-		#this will be hard
-		return None
-
 
