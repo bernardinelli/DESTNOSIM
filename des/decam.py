@@ -1,7 +1,11 @@
+from __future__ import print_function
 import numpy as np
 from itertools import chain
 from ccd import *
 import os 
+import subprocess
+import astropy.table as tb 
+
 
 class DECamExposure:
 	'''
@@ -109,14 +113,15 @@ class Survey:
 		with open('elements.txt', 'w') as f:
 			for j,i in enumerate(population.elements):
 				print(j, i[0],i[1],i[2],i[3],i[4],i[5], file = f)
+		with open('elements.txt', 'r') as f:
 
-		print(' '.join([orbitspp + '/DESTracks', '-cornerFile={}'.format(self.corners), 
-						'-exposureFile={}'.format(self.track), '-tdb0={}'.format(population.epoch), '-positionFile={}'.format(outputfile)
-						,'-readState={}'.format(population.state) ,'< elements.txt']))
+			print(' '.join([orbitspp + '/DESTracks', '-cornerFile={}'.format(self.corners), 
+							'-exposureFile={}'.format(self.track), '-tdb0={}'.format(population.epoch), '-positionFile={}'.format(outputfile)
+							,'-readState={}'.format(population.state) ,'< elements.txt']))
 
-		subprocess.call([orbitspp + '/DESTracks', '-cornerFile={}'.format(self.corners), 
-						'-exposureFile={}'.format(self.track), '-tdb0={}'.format(population.epoch), '-positionFile={}'.format(outputfile)
-						,'-readState={}'.format(population.state) ,'< elements.txt'])
+			subprocess.call([orbitspp + '/DESTracks', '-cornerFile={}'.format(self.corners), 
+							'-exposureFile={}'.format(self.track), '-tdb0={}'.format(population.epoch), '-positionFile={}'.format(outputfile)
+							,'-readState={}'.format(population.state)], stdin = f)
 
 		return tb.Table.read(outputfile)
 

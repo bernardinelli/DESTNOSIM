@@ -14,10 +14,10 @@ class DES(Survey):
 		orbitspp = os.getenv('ORBITSPP')
 
 		self.release = release
-		track ='{}/../data/{}.exposure.positions.fits'.format(orbitspp, self.release)
-		corners = '{}/../data/{}.ccdcorners.fits'.format(orbitspp, self.release)
+		track ='{}/data/{}.exposure.positions.fits'.format('/'.join(orbitspp.split('/')[:-1]), self.release)
+		corners = '{}/data/{}.ccdcorners.fits'.format('/'.join(orbitspp.split('/')[:-1]), self.release)
 		
-		exp = tb.Table.read(track)
+		exp = tb.Table.read(track, 1)
 
 		Survey.__init__(self, exp['expnum'], exp['ra'], exp['dec'], exp['mjd_mid'], exp['filter'], track = track, corners = corners)
 		self.exp = exp

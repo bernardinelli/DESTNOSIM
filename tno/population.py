@@ -23,7 +23,6 @@ class Population:
 		self.n_objects = n_objects
 		self.elementType = elementType
 		self.epoch = epoch
-
 		self.elements = np.zeros((n_objects, 6)) 
 
 		if self.elementType == 'elements':
@@ -91,7 +90,7 @@ class ElementPopulation(Population):
 	'''
 	def __init__(self, elements, epoch):
 		self.input = elements
-		n = len(elements[elements.keys()[0]])
+		n = len(elements[list(elements.keys())[0]])
 		Population.__init__(self, n, 'elements', epoch)
 		self._organizeElements()
 
@@ -143,7 +142,7 @@ class CartesianPopulation(Population):
 	'''
 	def __init__(self, elements, epoch):
 		self.input = elements
-		n = len(elements[elements.keys()[0]])
+		n = len(elements[list(elements.keys())[0]])
 		Population.__init__(self, n, 'cartesian', epoch)
 		self.elements[:,0] = self.input['x']
 		self.elements[:,1] = self.input['y']
