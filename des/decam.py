@@ -1,7 +1,7 @@
 import numpy as np
 from itertools import chain
 from ccd import *
-
+import os 
 
 class DECamExposure:
 	'''
@@ -72,12 +72,14 @@ class DECamExposure:
 			if inside_CCD != None:
 				ccd_id = [len(inside_CCD[i])*[ccdnums[ccdBounds.keys()[i]]] for i in range(len(inside_CCD)) if len(inside_CCD[i]) > 0]
 				inside_CCD = np.array(list(chain(*inside_CCD)))
-				ccd_id = list(chain(*ccd_id))
-				return index[inside_CCD], ccd_id
+				if len(inside_CCD) > 0:
+					return index[inside_CCD], ccd_id
+				else:
+					return [], None
 			else:
-				return None, None
+				return [], None
 		else:
-			return None, None
+			return [], None
 
 	def __str__(self):
 		return 'DECam exposure {} taken with {} band'.format(self.expnum, self.band)
@@ -101,4 +103,21 @@ class Survey:
 		self.exposures = {}
 		for ra,dec,mjd,n,b in zip(self.ra, self.dec, self.mjd, self.expnum, self.band):
 			self.exposures[n] = DECamExposure(n, ra, dec, mjd, b)
+
+	def createObservations(self, population, outputfile):
+		orbitspp = os.getenv('ORBITSPP')
+		with open('elements.txt', 'w') as f:
+			for j,i in enumerate(population.elements):
+				print(j, i[0],i[1],i[2],i[3],i[4],i[5], file = f)
+
+		print(' '.join([orbitspp + '/DESTracks', '-cornerFile={}'.format(self.corners), 
+						'-exposureFile={}'.format(self.track), '-tdb0={}'.format(population.epoch), '-positionFile={}'.format(outputfile)
+						,'-readState={}'.format(population.state) ,'< elements.txt']))
+
+		subprocess.call([orbitspp + '/DESTracks', '-cornerFile={}'.format(self.corners), 
+						'-exposureFile={}'.format(self.track), '-tdb0={}'.format(population.epoch), '-positionFile={}'.format(outputfile)
+						,'-readState={}'.format(population.state) ,'< elements.txt'])
+
+		return tb.Table.read(outputfile)
+
 
