@@ -11,11 +11,11 @@ class DESExposure(DECamExposure):
 
 class DES(Survey):
 	def __init__(self, release, m50 = None, c = None, k = None):
-		orbitspp = os.getenv('ORBITSPP')
+		orbdata = os.getenv('DESDATA')
 
 		self.release = release
-		track ='{}/data/{}.exposure.positions.fits'.format('/'.join(orbitspp.split('/')[:-2]), self.release)
-		corners = '{}/data/{}.ccdcorners.fits'.format('/'.join(orbitspp.split('/')[:-2]), self.release)
+		track ='{}/{}.exposure.positions.fits'.format(orbdata, self.release)
+		corners = '{}/{}.ccdcorners.fits'.format(orbdata, self.release)
 		
 		exp = tb.Table.read(track, 1)
 
