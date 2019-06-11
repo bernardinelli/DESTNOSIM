@@ -14,8 +14,8 @@ class DES(Survey):
 		orbitspp = os.getenv('ORBITSPP')
 
 		self.release = release
-		track ='{}/data/{}.exposure.positions.fits'.format('/'.join(orbitspp.split('/')[:-1]), self.release)
-		corners = '{}/data/{}.ccdcorners.fits'.format('/'.join(orbitspp.split('/')[:-1]), self.release)
+		track ='{}/data/{}.exposure.positions.fits'.format('/'.join(orbitspp.split('/')[:-2]), self.release)
+		corners = '{}/data/{}.ccdcorners.fits'.format('/'.join(orbitspp.split('/')[:-2]), self.release)
 		
 		exp = tb.Table.read(track, 1)
 

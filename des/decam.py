@@ -1,11 +1,11 @@
 from __future__ import print_function
 import numpy as np
 from itertools import chain
-from ccd import *
+import ccd
 import os 
 import subprocess
 import astropy.table as tb 
-
+from scipy.spatial import cKDTree
 
 class DECamExposure:
 	'''
@@ -47,22 +47,22 @@ class DECamExposure:
 		'''
 		Inverts the Gnomonic projection centered on the exposure
 		'''
-		x = np.array(x) * np.pi/180 
-		y = np.array(y) * np.pi/180
+		x = np.array(x) * np.pi/180.
+		y = np.array(y) * np.pi/180.
 		ra_rad = np.pi*self.ra/180.
 		dec_rad = np.pi*self.dec/180.
 		den = np.sqrt(1 + x**2 + y**2)
 		sin_dec = (np.sin(dec_rad) + y*np.cos(dec_rad))/den
 		sin_ra = x/(np.cos(dec_rad) * den)
-		return 180*(np.arcsin(sin_ra))/np.pi + ra_rad, 180*np.arcsin(sin_dec)/np.pi 
+		return 180.*(np.arcsin(sin_ra))/np.pi + self.ra, 180.*np.arcsin(sin_dec)/np.pi 
  
 
-	def checkInCCD(self, ra_list, dec_list, ccd_tree = None):
+	def checkInCCD(self, ra_list, dec_list, ccd_tree = None, ccd_keys = None):
 		'''
 		Checks if a list of RAs and Decs are inside a DECam CCD, returns indices that are inside and which CCD they belong to
 		'''
 		if ccd_tree == None:
-			ccd_tree = create_ccdtree()
+			ccd_tree, ccd_keys = ccd.create_ccdtree()
 
 		x, y = self.gnomonicProjection(ra_list, dec_list)
 
@@ -74,10 +74,10 @@ class DECamExposure:
 			inside_CCD = ccd_tree.query_ball_tree(tree, 0.149931, p = np.inf)
 			#this is probably the most complicated Python line ever written
 			if inside_CCD != None:
-				ccd_id = [len(inside_CCD[i])*[ccdnums[ccdBounds.keys()[i]]] for i in range(len(inside_CCD)) if len(inside_CCD[i]) > 0]
+				ccd_id = [len(inside_CCD[i])*[ccd.ccdnums[ccd_keys[i]]] for i in range(len(inside_CCD)) if len(inside_CCD[i]) > 0]
 				inside_CCD = np.array(list(chain(*inside_CCD)))
 				if len(inside_CCD) > 0:
-					return index[inside_CCD], ccd_id
+					return index[inside_CCD], list(chain(*ccd_id))
 				else:
 					return [], None
 			else:

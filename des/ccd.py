@@ -73,7 +73,8 @@ ccdnums =  {'S29': 1, 'S30':  2, 'S31':  3, 'S25':  4, 'S26':  5, 'S27':  6, 'S2
 
 
 def create_ccdtree():
-      ccd_center = {}
+      ccd_center = []
+      ccd_keys = []
       for i in ccdBounds:
           xmin = ccdBounds[i][0]
           xmax = ccdBounds[i][1]
@@ -81,11 +82,10 @@ def create_ccdtree():
           ymax = ccdBounds[i][3]
           x_center = (xmax + xmin)/2
           y_center = (ymax + ymin)/2
-          ccd_center[i] = (x_center, y_center)
-
-      ccd_query = np.array(ccd_center.values())
+          ccd_center.append((x_center, y_center))
+          ccd_keys.append(i)
+      ccd_query = np.array(ccd_center)
       ccd_query.T[1] = 2*ccd_query.T[1]
 
       ccd_tree = cKDTree(ccd_query)
-      return ccd_tree
-
+      return ccd_tree, ccd_keys
