@@ -115,7 +115,11 @@ class DoublePowerLaw(AnalyticDistribution):
 	
 		AnalyticDistribution.__init__(self, x_min, x_max, self.f)
 
-
+class BrownDistribution(AnalyticDistribution):
+	def __init__(self, x_min, x_max, sigma):
+		self.sigma = sigma
+		self.f = lambda x : np.sin(x * np.pi/180) * np.exp(- (x/sigma)**2)
+		AnalyticDistribution.__init__(self, x_min, x_max, self.f)
 
 '''
 Still doesn't work
