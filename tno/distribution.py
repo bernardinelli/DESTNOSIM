@@ -8,6 +8,7 @@ where 0 <= alpha <= 1 and p_1, p_2 are two distributions
 '''
 import numpy as np
 import inv_sample as ins
+import matplotlib.pyplot as plt
 
 class BaseDistribution:
 	'''
@@ -121,20 +122,42 @@ class BrownDistribution(AnalyticDistribution):
 		self.f = lambda x : np.sin(x * np.pi/180) * np.exp(- (x/sigma)**2/2.)
 		AnalyticDistribution.__init__(self, x_min, x_max, self.f)
 
-'''
-Still doesn't work
-class PowerLaw10:
+
+#Still doesn't work
+class PowerLaw10(BaseDistribution):
 	def __init__(self, slope, x_min, x_max, r_norm):
-		self.slope = np.slope
+		self.slope = slope
 		self.x_min = 10**(x_min - r_norm)
 		self.x_max = 10**(x_max - r_norm)
 		self.r_norm = r_norm
 		self.scale = self.x_max/self.x_min
 
 	def sample(self, n):
-		samp = np.random.power(self.slope + 1, size=n)
+		samp = np.random.power(self.slope, size=n)
 		return np.log10(self.x_min + self.scale * samp) + self.r_norm
+   
+def plot(Distribution, sample_size, bin_size):
+    sample=Distribution.sample(sample_size)
+    count, bins, ignored = plt.hist(sample, bins=bin_size)
+    plt.show()
+    plt.clf()
 
+power_distr = PowerLaw10(1, 0, 100, 100)
+log_distr = Logarithm(1,100)
+plot(power_distr,1000,100)
+plot(log_distr,1000,100)
+
+"""
+samp=power_distr.sample(1000)
+logsamp=log_distr.sample(1000)
+count, bins, ignored = plt.hist(samp, bins=100)
+plt.show()
+plt.clf()
+count, bins, ignored = plt.hist(logsamp, bins=100)
+plt.show()
+"""
+
+'''
 class DoublePowerLaw(JointDistribution):
 	def __init__(self, slope_1, slope_2, x_break, x_min, x_max):
 		self.slope_1 = slope_1
