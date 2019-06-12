@@ -147,15 +147,6 @@ log_distr = Logarithm(1,100)
 plot(power_distr,1000,100)
 plot(log_distr,1000,100)
 
-"""
-samp=power_distr.sample(1000)
-logsamp=log_distr.sample(1000)
-count, bins, ignored = plt.hist(samp, bins=100)
-plt.show()
-plt.clf()
-count, bins, ignored = plt.hist(logsamp, bins=100)
-plt.show()
-"""
 
 '''
 class DoublePowerLaw(JointDistribution):
