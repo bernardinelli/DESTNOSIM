@@ -7,6 +7,7 @@ where 0 <= alpha <= 1 and p_1, p_2 are two distributions
 
 '''
 import numpy as np
+import inv_sample as ins
 
 class BaseDistribution:
 	'''
@@ -18,6 +19,37 @@ class BaseDistribution:
 		return JointDistribution(self, other, 0.5)
 	def sample(self, n):
 		return np.zeros(n)
+
+class AnalyticDistribution(BaseDistribution):
+	'''	
+	Given an analytic probability density function, samples from it
+	'''
+	def __init__(self, x_min, x_max, function, n_samp = 1000, n_bins = 100):
+		self.f = function
+		self.x_min = x_min
+		self.x_max = x_max
+		self.n_samp = n_samp
+		self.n_bins = n_bins
+		self._constructSampler() 
+
+	def _constructSampler(self):
+		x = np.linspace(self.x_min, self.x_max, self.n_samp)
+		y = self.f(x)
+		self.invCDF = ins.inverse_cdf(x, y, self.n_bins)
+
+	def sample(self, n):
+		r = np.random.rand(n)
+		return self.invCDF(r)
+
+class DeltaFunction(BaseDistribution):
+	'''
+	Delta function centered at loc
+	'''
+	def _init__(self, loc):
+		self.loc = loc
+		pass
+	def sample(self, n):
+		return self.loc * np.ones(n)
 
 class PowerLaw(BaseDistribution):
 	'''
@@ -36,7 +68,6 @@ class PowerLaw(BaseDistribution):
 	
 	def _normalization(self):
 		return (self.x_max**(self.slope + 1) - self.x_min**(self.slope + 1))/(self.slope + 1)
-
 
 class JointDistribution(BaseDistribution):
 	'''
@@ -71,6 +102,39 @@ class Logarithm(Uniform):
 	def sample(self, n):
 		return np.exp(self._sampler.sample(n))
 
+class DoublePowerLaw(AnalyticDistribution):
+	def __init__(self, slope_1, slope_2, x_min, x_max, x_break, x_norm = None):
+		self.x_break = x_break
+		self.slope_1 = slope_1
+		self.slope_2 = slope_2
+		if x_norm == None:
+			x_norm = (x_min + x_max)/2
+		self.x_norm = x_norm
+
+		self.f = lambda x : np.piecewise(x, [ x <= self.x_break, x > self.x_break], [lambda x: np.power(x/x_norm, self.slope_1), lambda x: np.power(x/x_norm, self.slope_2) * np.power(self.x_break/x_norm, self.slope_1 - self.slope_2)])
+	
+		AnalyticDistribution.__init__(self, x_min, x_max, self.f)
+
+class BrownDistribution(AnalyticDistribution):
+	def __init__(self, x_min, x_max, sigma):
+		self.sigma = sigma
+		self.f = lambda x : np.sin(x * np.pi/180) * np.exp(- (x/sigma)**2/2.)
+		AnalyticDistribution.__init__(self, x_min, x_max, self.f)
+
+'''
+Still doesn't work
+class PowerLaw10:
+	def __init__(self, slope, x_min, x_max, r_norm):
+		self.slope = np.slope
+		self.x_min = 10**(x_min - r_norm)
+		self.x_max = 10**(x_max - r_norm)
+		self.r_norm = r_norm
+		self.scale = self.x_max/self.x_min
+
+	def sample(self, n):
+		samp = np.random.power(self.slope + 1, size=n)
+		return np.log10(self.x_min + self.scale * samp) + self.r_norm
+
 class DoublePowerLaw(JointDistribution):
 	def __init__(self, slope_1, slope_2, x_break, x_min, x_max):
 		self.slope_1 = slope_1
@@ -97,7 +161,7 @@ class DoublePowerLaw(JointDistribution):
 
 		return t1 + t2
 
-	'''def _normalize(self):
+	def _normalize(self):
 		a1 = self.slope_1
 		a2 = self.slope_2
 		r1 = self.x_min
@@ -105,20 +169,5 @@ class DoublePowerLaw(JointDistribution):
 		rb = self.x_break
 		num = - (1. + a2) * (r1**(1. + a1)) + (rb**a1) * ( (1. + a1) * r2 * ((r2/rb)**a2) + (a2 - a1)*rb)
 		den = (1. + a1) * (1.+a2)
-		return num/den'''
-
-
-'''
-Still doesn't work
-class PowerLaw10:
-	def __init__(self, slope, x_min, x_max, r_norm):
-		self.slope = np.slope
-		self.x_min = 10**(x_min - r_norm)
-		self.x_max = 10**(x_max - r_norm)
-		self.r_norm = r_norm
-		self.scale = self.x_max/self.x_min
-
-	def sample(self, n):
-		samp = np.random.power(self.slope + 1, size=n)
-		return np.log10(self.x_min + self.scale * samp) + self.r_norm
+		return num/den
 '''
