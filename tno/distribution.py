@@ -7,6 +7,7 @@ where 0 <= alpha <= 1 and p_1, p_2 are two distributions
 
 '''
 import numpy as np
+from scipy.stats import rv_continuous
 import inv_sample as ins
 import matplotlib.pyplot as plt
 
@@ -136,6 +137,66 @@ class PowerLaw10(BaseDistribution):
 		samp = np.random.power(self.slope, size=n)
 		return np.log10(self.x_min + self.scale * samp) + self.r_norm
    
+class BrokenPowerLaw(rv_continuous):
+
+    def __init__(self, slope_list, break_list, name='BrokenPowerLaw'):
+        #Lower bound
+        a=np.min(break_list)
+        #Upper bound
+        b=np.max(break_list)
+        super().__init__(a=a,b=b, name=name)
+        number_slopes=len(slope_list)
+        # Calculate the proper normalization of the PDF semi-analytically
+        
+        pdf_norms=[1.0]
+        for slope_num in range(1,number_slopes):
+            a=np.power(break_list[slope_num], slope_list[slope_num-1] - slope_list[slope_num])
+            pdf_norms.append(a)
+        pdf_norms = np.cumprod(pdf_norms)
+        
+        #CDF_OFFSET
+        cdf_offsets=[]
+        for counter in range (0, number_slopes):
+            slope = slope_list[counter]+1
+            norm = pdf_norms[counter]
+            cdf_offsets.append((norm/slope)*(np.power(break_list[counter+1], slope)-np.power(break_list[counter], slope)))
+        cdf_offsets = np.array(cdf_offsets)
+
+        offset_sum = cdf_offsets.sum()
+        cdf_offsets = np.cumsum(cdf_offsets)
+        pdf_norms = pdf_norms/offset_sum
+        cdf_offsets = cdf_offsets/offset_sum
+        
+        self.breaks = break_list
+        self.slopes = slope_list
+        self.pdf_norms = pdf_norms
+        self.cdf_offsets = cdf_offsets
+        self.num_segments = len(slope_list)
+        return
+  
+
+    #Overwriting
+    def _cdf(self, x):
+        original_input = np.atleast_1d(x)
+        empty_input = np.zeros_like(original_input)
+        offset = 0.0
+        for index in range(self.num_segments):
+            if index>0:
+                offset = self.cdf_offsets[index-1]
+            idx = (self.breaks[index] < original_input) & (original_input <= self.breaks[index+1])
+            slope = self.slopes[index]
+            norm = self.pdf_norms[index]
+            empty_input[idx] = (norm/(slope + 1)) * (np.power(original_input[idx], slope + 1) - np.power(self.breaks[index], slope + 1)) + offset
+        return empty_input
+
+    
+BrokenPowerLawTest = BrokenPowerLaw([1.5, -1.5, -23.5], [10, 100.5, 1000.0, 10000.5])
+rvs=BrokenPowerLawTest.rvs(size=1000)
+count, bins, ignored = plt.hist(rvs, bins=100)
+plt.show()
+plt.clf()
+        
+        
 def plot(Distribution, sample_size, bin_size):
     sample=Distribution.sample(sample_size)
     count, bins, ignored = plt.hist(sample, bins=bin_size)
