@@ -1,15 +1,15 @@
-from decam import *
+import decam
 import os 
 import astropy.table as tb
 
-class DESExposure(DECamExposure):
+class DESExposure(decam.DECamExposure):
 	def __init__(self, expnum, ra, dec, mjd_mid, band, m50 = None, c = None, k = None):
-		DECamExposure.__init__(self,expnum, ra, dec, mjd_mid, band)
+		decam.DECamExposure.__init__(self,expnum, ra, dec, mjd_mid, band)
 
 	def probDetection(self, m):
 		return None
 
-class DES(Survey):
+class DES(decam.Survey):
 	def __init__(self, release, m50 = None, c = None, k = None):
 		orbdata = os.getenv('DESDATA')
 
@@ -19,7 +19,7 @@ class DES(Survey):
 		
 		exp = tb.Table.read(track, 1)
 
-		Survey.__init__(self, exp['expnum'], exp['ra'], exp['dec'], exp['mjd_mid'], exp['filter'], track = track, corners = corners)
+		decam.Survey.__init__(self, exp['expnum'], exp['ra'], exp['dec'], exp['mjd_mid'], exp['filter'], track = track, corners = corners)
 		self.exp = exp
 
 		if m50 == None:

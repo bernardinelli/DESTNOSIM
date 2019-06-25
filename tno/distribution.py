@@ -47,7 +47,7 @@ class DeltaFunction(BaseDistribution):
 	'''
 	Delta function centered at loc
 	'''
-	def _init__(self, loc):
+	def __init__(self, loc):
 		self.loc = loc
 		pass
 	def sample(self, n):
@@ -188,8 +188,14 @@ class BrokenPowerLaw(rv_continuous):
             norm = self.pdf_norms[index]
             empty_input[idx] = (norm/(slope + 1)) * (np.power(original_input[idx], slope + 1) - np.power(self.breaks[index], slope + 1)) + offset
         return empty_input
-
     
+    def plot(self, sample_size, bin_size):
+        sample=self.sample(sample_size)
+        count, bins, ignored = plt.hist(sample, bins=bin_size)
+        plt.show()
+        plt.clf()
+    
+"""
 BrokenPowerLawTest = BrokenPowerLaw([1.5, -1.5, -23.5], [10, 100.5, 1000.0, 10000.5])
 rvs=BrokenPowerLawTest.rvs(size=1000)
 count, bins, ignored = plt.hist(rvs, bins=100)
@@ -197,18 +203,14 @@ plt.show()
 plt.clf()
         
         
-def plot(Distribution, sample_size, bin_size):
-    sample=Distribution.sample(sample_size)
-    count, bins, ignored = plt.hist(sample, bins=bin_size)
-    plt.show()
-    plt.clf()
+
 
 power_distr = PowerLaw10(1, 0, 100, 100)
 log_distr = Logarithm(1,100)
 plot(power_distr,1000,100)
 plot(log_distr,1000,100)
 
-
+"""
 '''
 class DoublePowerLaw(JointDistribution):
 	def __init__(self, slope_1, slope_2, x_break, x_min, x_max):
