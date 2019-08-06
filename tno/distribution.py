@@ -45,7 +45,7 @@ class DeltaFunction(BaseDistribution):
 	'''
 	Delta function centered at loc
 	'''
-	def _init__(self, loc):
+	def __init__(self, loc):
 		self.loc = loc
 		pass
 	def sample(self, n):
@@ -135,39 +135,4 @@ class PowerLaw10:
 		samp = np.random.power(self.slope + 1, size=n)
 		return np.log10(self.x_min + self.scale * samp) + self.r_norm
 
-class DoublePowerLaw(JointDistribution):
-	def __init__(self, slope_1, slope_2, x_break, x_min, x_max):
-		self.slope_1 = slope_1
-		self.slope_2 = slope_2
-		self.x_break = x_break
-		self.x_min = x_min
-		self.x_max = x_max		
-		#self.norm = self._normalize()
-		#self.frac = -(self.x_min**(1 + self.slope_1) - self.x_break**(1+self.slope_1))/(1 + self.slope_1)
-		self.frac = (slope_2-1)/(slope_1-1) * x_break**(slope_2 - slope_1)
-
-		self.norm = 1
-		JointDistribution.__init__(self, PowerLaw(slope_1, x_min, x_break), PowerLaw(slope_2, x_break, x_max), self.frac/self.norm)
-
-	def _normalize(self):
-		a1 = self.slope_1
-		a2 = self.slope_2 
-		r1 = self.x_min 
-		r2 = self.x_max
-		rb = self.x_break
-
-		t1 = rb**(1+a1)/(1+a1)  - (r1**(1+a1))/(1+a1) 
-		t2 = (r2**(1+a2) - rb**(1+a2))/(1+a2)
-
-		return t1 + t2
-
-	def _normalize(self):
-		a1 = self.slope_1
-		a2 = self.slope_2
-		r1 = self.x_min
-		r2 = self.x_max
-		rb = self.x_break
-		num = - (1. + a2) * (r1**(1. + a1)) + (rb**a1) * ( (1. + a1) * r2 * ((r2/rb)**a2) + (a2 - a1)*rb)
-		den = (1. + a1) * (1.+a2)
-		return num/den
 '''

@@ -5,9 +5,18 @@ import astropy.table as tb
 class DESExposure(DECamExposure):
 	def __init__(self, expnum, ra, dec, mjd_mid, band, m50 = None, c = None, k = None):
 		DECamExposure.__init__(self,expnum, ra, dec, mjd_mid, band)
+		self.m50 = m50 
+		self.c = c
+		self.k = k
 
 	def probDetection(self, m):
-		return None
+		'''
+		Computes the detection probability of something with magnitude m in this exposure
+		'''
+		if self.m50 != None:
+			return self.c/(1 + np.exp(self.k * (m - self.m50)))
+		else:
+			return np.zeros_like(m)
 
 class DES(Survey):
 	def __init__(self, release, m50 = None, c = None, k = None):

@@ -125,4 +125,8 @@ class Survey:
 
 		return tb.Table.read(outputfile)
 
-
+	def __getitem__(self, key):
+		try:
+			return self.exposures[key]
+		except:
+			raise AttributeError("Survey does not have a list of DECamExposures!")
