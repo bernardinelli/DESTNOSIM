@@ -86,7 +86,7 @@ class DECamExposure:
 			return [], None
 
 	def __str__(self):
-		return 'DECam exposure {} taken with {} band'.format(self.expnum, self.band)
+		return 'DECam exposure {} taken with {} band. RA: {} Dec: {} MJD: {}'.format(self.expnum, self.band, self.ra, self.dec, self.mjd)
 
 
 class Survey:

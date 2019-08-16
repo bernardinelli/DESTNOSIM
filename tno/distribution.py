@@ -121,18 +121,3 @@ class BrownDistribution(AnalyticDistribution):
 		self.f = lambda x : np.sin(x * np.pi/180) * np.exp(- (x/sigma)**2/2.)
 		AnalyticDistribution.__init__(self, x_min, x_max, self.f)
 
-'''
-Still doesn't work
-class PowerLaw10:
-	def __init__(self, slope, x_min, x_max, r_norm):
-		self.slope = np.slope
-		self.x_min = 10**(x_min - r_norm)
-		self.x_max = 10**(x_max - r_norm)
-		self.r_norm = r_norm
-		self.scale = self.x_max/self.x_min
-
-	def sample(self, n):
-		samp = np.random.power(self.slope + 1, size=n)
-		return np.log10(self.x_min + self.scale * samp) + self.r_norm
-
-'''

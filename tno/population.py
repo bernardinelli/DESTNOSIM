@@ -3,10 +3,8 @@ import numpy as np
 import os
 import subprocess
 import astropy.table as tb 
-
-GM = 2*np.pi
-
-
+import pickle 
+from transformation import * 
 
 def fibonacci_sphere(n_grid):
 	sin_phi = 2*np.arange(-n_grid, n_grid, 1, dtype=float)/(2*n_grid + 1.)
@@ -16,9 +14,11 @@ def fibonacci_sphere(n_grid):
 	z_shell = sin_phi
 	return x_shell, y_shell, z_shell
 
-#def brown_distribution():
 
 class Population:
+	'''
+	Base class for all populations
+	'''
 	def __init__(self, n_objects, elementType, epoch):
 		self.n_objects = n_objects
 		self.elementType = elementType
@@ -36,6 +36,34 @@ class Population:
 		'''
 		return None
 
+	def createCopies(self, n_clones):
+		'''
+		Creates n_clones copies of each object, allowing for some posterior randomization
+		'''
+
+		self.elements = np.vstack([self.elements for i in range(n_clones)])
+		self.n_objects*= n_clones
+
+	def __str__(self):
+		return "Population with {} objects. Elements are of type {}".format(self.n_objects, self.elementType)
+
+	def __add__(self, other):
+		if self.elementType != other.elementType:
+			raise ValueError("The elements of each population must be of the same type")
+		if self.epoch != other.epoch:
+			raise ValueError("The epochs must be the same")
+		newpop = Population(self.n_objects + other.n_objects, self.elementType, self.epoch)
+		newpop.elements[0:self.n_objects,:] = self.elements
+		newpop.elements[self.n_objects:,:] = other.elements
+		return newpop
+
+	def write(self, filename):
+		with open(filename, 'wb') as f:
+			pickle.dump(self, f, protocol = 2)
+	@staticmethod
+	def read(filename):
+		with open(filename, 'rb') as f:
+			return pickle.load(f)
 
 class IsotropicPopulation(Population):
 	def __init__(self, n_grid, epoch):
@@ -90,50 +118,73 @@ class ElementPopulation(Population):
 	'''
 	def __init__(self, elements, epoch):
 		self.input = elements
+		self._keys = elements.keys()
 		n = len(elements[list(elements.keys())[0]])
-		Population.__init__(self, n, 'elements', epoch)
+		Population.__init__(self, n, 'keplerian', epoch)
 		self._organizeElements()
 
 	def _organizeElements(self):
-		if 'a' in self.input:
+		if 'a' in self._keys:
 			self.elements[:,0] = self.input['a']
-		elif 'q' in self.input and 'e' in self.input:
+		elif 'q' in self._keys and 'e' in self._keys:
 			self.elements[:,0] = self.input['q']/(1 - self.input['e'])
 		else:
 			raise ValueError('Please provide either semi-major axis (a) or perihelion (q)/eccentricity (e) as input')
 		
-		if 'e' in self.input:
+		if 'e' in self._keys:
 			self.elements[:,1] = self.input['e']
-		elif 'q' in self.input and 'a' in self.input:
+		elif 'q' in self._keys and 'a' in self._keys:
 			self.elements[:,1] = 1 - self.input['q']/self.input['a'] 
 		else:
 			raise ValueError("Please provide either eccentricity (e) or semi-major axis (a)/perihelion (q) as input")
 
-		if 'i' in self.input:
+		if 'i' in self._keys:
 			self.elements[:,2] = self.input['i']
 		else:
 			raise ValueError("Please provide inclination (i) as input")
 
-		if 'lan' in self.input:
+		if 'lan' in self._keys:
 			self.elements[:,3] = self.input['lan']
-		elif 'lop' in self.input and 'aop' in self.input:
+		elif 'Omega' in self._keys:
+			self.elements[:,3] = self.input['Omega']
+		elif 'lop' in self._keys and 'aop' in self._keys:
 			self.elements[:,3] = self.input['lop'] - self.input['aop']
+		elif 'varpi' in self._keys and 'omega' in self._keys:
+			self.elements[:,3] = self.input['varpi'] - self.input['omega']
 		else:
 			raise ValueError("Please provide either longitude of ascending node (lan) or longitude of perihelion (lop)/argument of perihelion (aop) as input")
 
-		if 'aop' in self.input:
+		if 'aop' in self._keys:
 			self.elements[:,4] = self.input['aop']
-		elif 'lop' in self.input and 'lan' in self.input:
+		elif 'omega' in self._keys:
+			self.elements[:,4] = self.input['omega']
+		elif 'lop' in self._keys and 'lan' in self._keys:
 			self.elements[:,4] = self.input['lop'] - self.input['lan']
+		elif 'varpi' in self._keys and 'Omega' in self._keys:
+			self.elements[:,3] = self.input['varpi'] - self.input['Omega']
 		else:
 			raise ValueError("Please provide either argument of perihelion (aop) or longitude of perihelion (lop)/longitude of ascending node (lan) as input")
 
-		if 'top' in self.input:
+		if 'top' in self._keys:
 			self.elements[:,5] = self.input['top']
-		elif 'man' in self.input:
+		elif 'T_p' in self._keys:
+			self.elements[:,5] = self.input['T_p']
+		elif 'man' in self._keys:
 			self.elements[:,5] = self.epoch - self.input['man'] * np.power(self.input['a'], 3./2)
 		else:
 			raise ValueError("Please provide either time of perihelion passage (top) or mean anomaly (man)/semi-major axis (a) as input")
+
+	def randomizeAngle(self, element):
+		eldic = {'lan' : 3, 'aop' : 4}
+		if type(element) is int:
+			self.elements[:,element] = np.random.rand(self.n_objects)*360
+		else:
+			self.elements[:,eldic[element]] = np.random.rand(self.n_objects)*360
+
+	def randomizeToP(self):
+		self.elements[:,5] = self.epoch - (np.random.rand(self.n_objects) * 2* np.pi - np.pi) * np.power(self.elements[:,0], 3./2)
+
+		
 
 
 class CartesianPopulation(Population):
