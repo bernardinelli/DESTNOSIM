@@ -57,7 +57,7 @@ class DECamExposure:
 		return 180.*(np.arcsin(sin_ra))/np.pi + self.ra, 180.*np.arcsin(sin_dec)/np.pi 
  
 
-	def checkInCCD(self, ra_list, dec_list, ccd_tree = None, ccd_keys = None):
+	def checkInCCD(self, ra_list, dec_list, ccd_tree = None, ccd_keys = None, ccdsize = 0.149931):
 		'''
 		Checks if a list of RAs and Decs are inside a DECam CCD, returns indices that are inside and which CCD they belong to
 		'''
@@ -71,9 +71,9 @@ class DECamExposure:
 		if len(x) > 0:
 			tree = cKDTree(tree_data)
 			## CCD size = 0.149931 deg
-			inside_CCD = ccd_tree.query_ball_tree(tree, 0.149931, p = np.inf)
+			inside_CCD = ccd_tree.query_ball_tree(tree, ccdsize, p = np.inf)
 			#this is probably the most complicated Python line ever written
-			if inside_CCD != None:
+			if inside_CCD != None: 
 				ccd_id = [len(inside_CCD[i])*[ccd.ccdnums[ccd_keys[i]]] for i in range(len(inside_CCD)) if len(inside_CCD[i]) > 0]
 				inside_CCD = np.array(list(chain(*inside_CCD)))
 				if len(inside_CCD) > 0:

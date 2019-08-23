@@ -28,7 +28,7 @@ class DES(Survey):
 		
 		exp = tb.Table.read(track, 1)
 
-		Survey.__init__(self, exp['expnum'], exp['ra'], exp['dec'], exp['mjd_mid'], exp['filter'], track = track, corners = corners)
+		Survey.__init__(self, exp['EXPNUM'], exp['RA'], exp['DEC'], exp['MJD_MID'], exp['BAND'], track = track, corners = corners)
 		self.exp = exp
 
 		if m50 == None:

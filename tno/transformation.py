@@ -63,12 +63,14 @@ def cartesian_to_keplerian(xv, epoch, helio = False, ecliptic = False):
 	h = np.sqrt(h_vec[:,0] * h_vec[:,0] + h_vec[:,1] * h_vec[:,1] + h_vec[:,2] * h_vec[:,2])
 	n = np.sqrt(n_vec[:,0] * n_vec[:,0] + n_vec[:,1] * n_vec[:,1] + n_vec[:,2] * n_vec[:,2])
 	cos_i = h_vec[:,2]/h 
+
 	cosOmega = n_vec[:,0]/n 
 	cosomega = (n_vec[:,0] * e_vec[:,0] + n_vec[:,1] * e_vec[:,1] + n_vec[:,2] * e_vec[:,2])/(n*e)
 
 	i = np.arccos(cos_i) * 180./np.pi
 	Omega = np.arccos(cosOmega) * 180./np.pi
 	omega = np.arccos(cosomega) * 180./np.pi
+	Omega[np.where(n_vec[:,1] < 0)] = 360 - Omega[np.where(n_vec[:,1] < 0)]
 	omega[np.where(e_vec[:,2] < 0)] = 360 - omega[np.where(e_vec[:,2] < 0)]
 
 	p = h*h/mu
