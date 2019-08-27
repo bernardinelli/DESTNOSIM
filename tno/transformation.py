@@ -1,4 +1,6 @@
+from __future__ import print_function
 import numpy as np 
+from scipy.optimize import root
 
 '''
 Solar system constants
@@ -20,10 +22,12 @@ SolarSystemGM = SunGM + MercuryGM + VenusGM + EarthMoonGM + MarsGM + JupiterGM +
 EclipticInclination = 23.43928 * np.pi/180
 # ----------------------------------------------------------------------------------------------------------------
 
+
 def R(omega, Omega, i):
 	'''
 	Computes the rotation matrix :math:`R = R(\\Omega, \\omega, i)` that maps from the plane of the ellipse to 3D space aligned with the ecliptic plane
 	'''
+
 	cO = np.cos(np.pi*Omega/180)
 	sO = np.sin(np.pi*Omega/180)
 	co = np.cos(np.pi*omega/180)
@@ -31,22 +35,34 @@ def R(omega, Omega, i):
 	ci = np.cos(np.pi*i/180)
 	si = np.sin(np.pi*i/180)
 
-	R = np.matrix([[cO * co - sO * so * ci, - cO * so - sO * co * ci, sO * si],[sO * co + cO * so * ci, -sO * so + cO * co * ci, -cO * si],[si * so, si*co, ci]])
+	R = np.array([[cO * co - sO * so * ci, - cO * so - sO * co * ci, sO * si],
+				[sO * co + cO * so * ci, -sO * so + cO * co * ci, -cO * si],
+				[si * so, si*co, ci]])
 
-	return R
 
-def cartesian_to_keplerian(xv, epoch, helio = False, ecliptic = False):
+	if np.isscalar(omega):
+		return R
+	else:
+		return np.transpose(R,(2,0,1))
+
+def cartesian_to_keplerian(cartesian, epoch, helio = False, ecliptic = False):
 	'''
 	Goes from ecliptic oriented state vector (i.e. cartesian representation) to orbital elements.
 	See appendix B of Bernstein & Khushalani 2000, for example
 	'''
 	mu = SunGM if helio else SolarSystemGM
 
+	xv = np.zeros_like(cartesian)
 	if not ecliptic:
 		cosEcl = np.cos(EclipticInclination)
 		sinEcl = np.sin(EclipticInclination)
-		xv[:,1], xv[:,2] = cosEcl * xv[:,1] + sinEcl * xv[:,2], -sinEcl * xv[:,1] + cosEcl * xv[:,2]
-		xv[:,4], xv[:,5] = cosEcl * xv[:,4] + sinEcl * xv[:,5], -sinEcl * xv[:,4] + cosEcl * xv[:,5]
+		xv[:,0] = cartesian[:,0]
+		xv[:,3] = cartesian[:,3]
+		xv[:,1], xv[:,2] = cosEcl * cartesian[:,1] + sinEcl * cartesian[:,2], -sinEcl * cartesian[:,1] + cosEcl * cartesian[:,2]
+		xv[:,4], xv[:,5] = cosEcl * cartesian[:,4] + sinEcl * cartesian[:,5], -sinEcl * cartesian[:,4] + cosEcl * cartesian[:,5]
+	else:
+		xv = cartesian
+
 
 	x = np.sqrt(xv[:,0]*xv[:,0] + xv[:,1]*xv[:,1]+ xv[:,2]*xv[:,2])
 	vsq_mu = (xv[:,3]**2 + xv[:,4]**2 + xv[:,5]**2)/mu
@@ -96,6 +112,90 @@ def cartesian_to_keplerian(xv, epoch, helio = False, ecliptic = False):
 
 	return aei
 
+def q(E, a, e):
+        '''
+        Computes
+
+        :math:`\\mathbf{q} = \(a(\\cos(E) - e), a\\sqrt{1-e^2}\\sin(E),0 \)`,
+
+        the coordinate vector on the plane of the ellipse
+        '''     
+        q1 = a*(np.cos(E)-e)
+        q2 = a*np.sqrt(1-e**2)*np.sin(E)
+
+        if np.isscalar(a):
+        	return np.array([q1,q2,0])
+        else:
+        	return np.array([q1,q2,np.zeros_like(a)])
+
+def dqdt(E, a, e, mu):
+        '''
+        Computes
+
+        :math:`\\frac{\\mathrm{d}\\mathbf{q}}{\\mathrm{d} t} = \(- \\frac{n a \\sin E}{1 - e \\cos E}, \\frac{n a \\sqrt{1-e^2} \\cos E}{1 - e \\cos E},0 \)`,
+
+        the velocity on the plane of the ellipse, where :math:`n = \\sqrt{G (M + m)}a^{-3\2} \\aprox \\sqrt{GM}a^{-3/2} = 2 \\pi a^{-3/2}` in our units.
+        '''     
+        n = np.sqrt(mu)/np.power(a,3./2)
+        den = 1 - e*np.cos(E)
+        q1 = -n*a*np.sin(E)/den
+        q2 = n*a*np.sqrt(1-e**2)*np.cos(E)/den
+        if np.isscalar(a):
+        	return np.array([q1,q2,0])
+        else:
+        	return np.array([q1,q2,np.zeros_like(a)])
+
+def keplerian_to_cartesian(keplerian, epoch, helio = False, ecliptic = False):
+	'''
+	Goes from Keplerian elements to ecliptic or equatorial state vectors
+	See chapter 1 of Modern Celestial Mechanics - Morbidelli for example
+	'''
+	mu = SunGM if helio else SolarSystemGM
+
+
+	M0 = (epoch - keplerian[:,5])*(np.sqrt(mu)/np.power(keplerian[:,0],3./2))
+	#print(M0)
+
+	f = lambda E :  E - keplerian[:,1]*np.sin(E) - M0
+
+
+	E = root(f, np.zeros_like(keplerian[:,0])).x
+
+	q_vec = q(E, keplerian[:,0], keplerian[:,1])
+
+	Rot = R(keplerian[:,4], keplerian[:,3], keplerian[:,2])
+
+	x = np.einsum('...ij,j...', Rot, q_vec)
+
+	dqdt_vec = dqdt(E, keplerian[:,0], keplerian[:,1], mu)
+
+	v = np.einsum('...ij,j...', Rot, dqdt_vec)
+
+	xv = np.zeros_like(keplerian)
+
+	xv[:,0:3] = x
+	xv[:,3:] = v
+
+	if not ecliptic:
+		cosEcl = np.cos(EclipticInclination)
+		sinEcl = -np.sin(EclipticInclination)
+		xv[:,1], xv[:,2] = cosEcl * xv[:,1] + sinEcl * xv[:,2], -sinEcl * xv[:,1] + cosEcl * xv[:,2]
+		xv[:,4], xv[:,5] = cosEcl * xv[:,4] + sinEcl * xv[:,5], -sinEcl * xv[:,4] + cosEcl * xv[:,5]
+
+	return xv
+
+def dist_to_point(elements, epoch, element_type, point, helio = False, ecliptic = False):
+	'''
+	Computes the distance for all objects from the 3d vector point. Computes coordinate changes as needed
+	'''
+	if element_type == 'keplerian':
+		xv = keplerian_to_cartesian(elements, epoch, helio, ecliptic)
+	else:
+		xv = elements
+
+	r = np.sqrt((xv[:,0] - point[0])**2 + (xv[:,1] - point[1])**2 + (xv[:,2] - point[2])**2)
+
+	return r
 
 
 

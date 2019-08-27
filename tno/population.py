@@ -4,6 +4,7 @@ import os
 import subprocess
 import astropy.table as tb 
 import pickle 
+import copy
 from transformation import * 
 
 def fibonacci_sphere(n_grid):
@@ -25,7 +26,7 @@ class Population:
 		self.epoch = epoch
 		self.elements = np.zeros((n_objects, 6)) 
 
-		if self.elementType == 'elements':
+		if self.elementType == 'keplerian':
 			self.state = 'F'
 		else:
 			self.state = 'T'
@@ -34,7 +35,7 @@ class Population:
 		'''
 		Depends on magnitude distributions from `magnitude.py`
 		'''
-		return None
+		return None 
 
 	def createCopies(self, n_clones):
 		'''
@@ -42,7 +43,7 @@ class Population:
 		'''
 
 		self.elements = np.vstack([self.elements for i in range(n_clones)])
-		self.n_objects*= n_clones
+		self.n_objects *= n_clones
 
 	def __str__(self):
 		return "Population with {} objects. Elements are of type {}".format(self.n_objects, self.elementType)
@@ -64,6 +65,35 @@ class Population:
 	def read(filename):
 		with open(filename, 'rb') as f:
 			return pickle.load(f)
+
+	def __getitem__(self, index):
+		return self.elements[index,:]
+
+	def sampleElements(self, covariances, n_samples):
+		'''
+		Draws from the array of covariance matrices provided		
+		'''
+		n_orig = copy.deepcopy(self.n_objects)
+		self.covariance = covariances
+		if n_samples > 1:
+			self.createCopies(n_samples)
+
+		for i in range(n_orig):
+			samples = np.random.multivariate_normal(self.elements[i,:], covariances[i], n_samples)
+			for j in range(n_samples):
+				self.elements[i + j*n_orig,:] = samples[j]
+
+	def distanceToCenter(self, helio = False, ecliptic = False):
+		'''
+		Computes distance to the center of mass of the system. helio and ecliptic are required if a transformation from orbital elements
+		to cartesian vectors is needed
+		'''
+
+		r = dist_to_point(self.elements, self.epoch, self.elementType, np.array([0,0,0]), helio, ecliptic)
+		self.r = r 
+		return r
+
+
 
 class IsotropicPopulation(Population):
 	def __init__(self, n_grid, epoch):
@@ -102,7 +132,7 @@ class IsotropicPopulation(Population):
 		self.elements[:,5] = vz[perm]
 
 	def generateVelocities(self, distribution):
-		v_circ = GM/np.sqrt(self.r)
+		v_circ = SolarSystemGM/np.sqrt(self.r)
 		v_scale = distribution.sample(self.n_objects)
 
 		self.elements[:,3] = v_circ * v_scale
@@ -184,7 +214,19 @@ class ElementPopulation(Population):
 	def randomizeToP(self):
 		self.elements[:,5] = self.epoch - (np.random.rand(self.n_objects) * 2* np.pi - np.pi) * np.power(self.elements[:,0], 3./2)
 
-		
+	def randomizeInclination(self):
+		self.elements[:,element] = np.arccos(np.random.rand(self.n_objects)*2 - 1) * 180/np.pi
+
+
+	def transformElements(self, heliocentric = False, ecliptic = False):
+		'''
+		Transforms the population to a CartesianPopulation. Depends on being heliocentric or barycentric and ecliptic aligned or equatoriallly aligned
+		'''
+
+		xv = keplerian_to_cartesian(self.elements, self.epoch, heliocentric, ecliptic)
+		xv_dict = {'x' : xv[:,0], 'y' : xv[:,1], 'z' : xv[:,2], 'vx' : xv[:,3], 'vy' : xv[:,4], 'vz' : xv[:,5]}
+		return CartesianPopulation(xv_dict, self.epoch)
+	
 
 
 class CartesianPopulation(Population):
@@ -201,6 +243,15 @@ class CartesianPopulation(Population):
 		self.elements[:,3] = self.input['vx']
 		self.elements[:,4] = self.input['vy']
 		self.elements[:,5] = self.input['vz']
+
+	def transformElements(self, heliocentric = False, ecliptic = False):
+		'''
+		Transforms the population to a ElementPopulation. Depends on being heliocentric or barycentric and ecliptic aligned or equatoriallly aligned
+		'''
+
+		aei = cartesian_to_keplerian(self.elements, self.epoch, heliocentric, ecliptic)
+		aei_dict = {'a' : aei[:,0], 'e' : aei[:,1], 'i' : aei[:,2], 'Omega' : aei[:,3], 'omega' : aei[:,4], 'T_p' : aei[:,5]}
+		return ElementPopulation(aei_dict, self.epoch)
 
 
 
