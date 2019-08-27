@@ -134,7 +134,7 @@ def dqdt(E, a, e, mu):
 
         :math:`\\frac{\\mathrm{d}\\mathbf{q}}{\\mathrm{d} t} = \(- \\frac{n a \\sin E}{1 - e \\cos E}, \\frac{n a \\sqrt{1-e^2} \\cos E}{1 - e \\cos E},0 \)`,
 
-        the velocity on the plane of the ellipse, where :math:`n = \\sqrt{G (M + m)}a^{-3\2} \\aprox \\sqrt{GM}a^{-3/2} = 2 \\pi a^{-3/2}` in our units.
+        the velocity on the plane of the ellipse, where :math:`n = \\sqrt{G (M + m)}a^{-3\2} \\aprox \\sqrt{GM}a^{-3/2} = 2 \\pi a^{-3/2}` in our units and heliocentric coordinates.
         '''     
         n = np.sqrt(mu)/np.power(a,3./2)
         den = 1 - e*np.cos(E)
@@ -190,8 +190,10 @@ def dist_to_point(elements, epoch, element_type, point, helio = False, ecliptic 
 	'''
 	if element_type == 'keplerian':
 		xv = keplerian_to_cartesian(elements, epoch, helio, ecliptic)
-	else:
+	elif element_type == 'cartesian':
 		xv = elements
+	else:
+		raise ValueError("Element type must either be keplerian or cartesian!")
 
 	r = np.sqrt((xv[:,0] - point[0])**2 + (xv[:,1] - point[1])**2 + (xv[:,2] - point[2])**2)
 

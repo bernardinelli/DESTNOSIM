@@ -31,11 +31,52 @@ class Population:
 		else:
 			self.state = 'T'
 	
-	def generateMagnitudes(self, distribution):
+	def generateMagnitudes(self, distribution, mag_type, band, colors = None, observer_pos = None, helio = False, ecliptic = False):
 		'''
-		Depends on magnitude distributions from `magnitude.py`
+		Depends on magnitude distributions from `distribution.py`. 
+		distribution can be a list/array of distributions, in which case the magnitude of object i will come from distribution[i] 
+		Type is either absolute or apparent, if absolute, requires observer_pos (3d array), helio and ecliptic (booleans)
+		Band is which band is being generated, and colors (can be none, in which case only one band is generated) defines the other colors
+		The format for colors is a dictionary of "band - colors[i]"
 		'''
-		return None 
+		if mag_type == 'absolute':
+			name = 'H' 
+		elif mag_type == 'apparent':
+			name = 'm'
+		else:
+			raise ValueError("Magnitude type (mag_type) must be either absolute or apparent")
+		
+
+		if len(distribution) > 0:
+			mag_band = np.zeros(self.n_objects)
+			for i, dist in enumerate(distribution):
+				mag_band[i] = dist.sample(1)
+		else:
+			mag_band = distribution.sample(self.n_objects)
+
+		mag_table = tb.Table()
+
+		mag_table[name + '_' + band] = 	mag_band
+
+		for i in colors:
+			mag_table[name + '_' + i] = mag_band - colors[i] 
+
+		mag_table['ORBITID'] = range(self.n_objects)
+
+		if mag_type == 'absolute':
+			self.distanceToCenter(helio, ecliptic)
+			sun_dist = self.r
+			obs_dist = self.distanceToPoint(observer_pos, helio, ecliptic)
+
+			mag_table['m_' + band] = mag_band + 5 * np.log10(sun_dist * obs_dist)
+
+			for i in colors:
+				mag_table['m_' + i] = mag_table['H_' + i] - colors[i] 
+
+		self.mag = mag_table
+
+
+
 
 	def createCopies(self, n_clones):
 		'''
@@ -91,9 +132,15 @@ class Population:
 
 		r = dist_to_point(self.elements, self.epoch, self.elementType, np.array([0,0,0]), helio, ecliptic)
 		self.r = r 
-		return r
 
+	def distanceToPoint(self, point, helio = False, ecliptic = False):
+		'''
+		Computes distance to the center of mass of the system. helio and ecliptic are required if a transformation from orbital elements
+		to cartesian vectors is needed
+		'''
 
+		r = dist_to_point(self.elements, self.epoch, self.elementType, point, helio, ecliptic)
+		return r 
 
 class IsotropicPopulation(Population):
 	def __init__(self, n_grid, epoch):
@@ -217,12 +264,10 @@ class ElementPopulation(Population):
 	def randomizeInclination(self):
 		self.elements[:,element] = np.arccos(np.random.rand(self.n_objects)*2 - 1) * 180/np.pi
 
-
 	def transformElements(self, heliocentric = False, ecliptic = False):
 		'''
 		Transforms the population to a CartesianPopulation. Depends on being heliocentric or barycentric and ecliptic aligned or equatoriallly aligned
 		'''
-
 		xv = keplerian_to_cartesian(self.elements, self.epoch, heliocentric, ecliptic)
 		xv_dict = {'x' : xv[:,0], 'y' : xv[:,1], 'z' : xv[:,2], 'vx' : xv[:,3], 'vy' : xv[:,4], 'vz' : xv[:,5]}
 		return CartesianPopulation(xv_dict, self.epoch)
@@ -248,7 +293,6 @@ class CartesianPopulation(Population):
 		'''
 		Transforms the population to a ElementPopulation. Depends on being heliocentric or barycentric and ecliptic aligned or equatoriallly aligned
 		'''
-
 		aei = cartesian_to_keplerian(self.elements, self.epoch, heliocentric, ecliptic)
 		aei_dict = {'a' : aei[:,0], 'e' : aei[:,1], 'i' : aei[:,2], 'Omega' : aei[:,3], 'omega' : aei[:,4], 'T_p' : aei[:,5]}
 		return ElementPopulation(aei_dict, self.epoch)
