@@ -1,5 +1,6 @@
 import numpy as np 
 from scipy.spatial import cKDTree
+from astropy.wcs import WCS
 
 ccdBounds = {'N1': (-1.0811, -0.782681, -0.157306, -0.00750506),
              'N2': (-0.771362, -0.472493, -0.157385, -0.00749848), 
@@ -89,3 +90,35 @@ def create_ccdtree():
 
       ccd_tree = cKDTree(ccd_query)
       return ccd_tree, ccd_keys
+
+
+def ray_tracing(x,y,poly):
+    n = len(poly)
+    inside = False
+    p2x = 0.0
+    p2y = 0.0
+    xints = 0.0
+    p1x,p1y = poly[0]
+    for i in range(n+1):
+        p2x,p2y = poly[i % n]
+        if y > min(p1y,p2y):
+            if y <= max(p1y,p2y):
+                if x <= max(p1x,p2x):
+                    if p1y != p2y:
+                        xints = (y-p1y)*(p2x-p1x)/(p2y-p1y)+p1x
+                    if p1x == p2x or x <= xints:
+                        inside = not inside
+        p1x,p1y = p2x,p2y
+
+    return inside
+
+
+def get_wcs_table(table):
+    '''
+    Generates a WCS dictionary using astropy.wcs and the wcs table for the exposure. 
+    Note that these are not the pixmappy solutions, so are less accurate
+    '''
+    d = {k:table[k] for k in table.colnames}
+    return WCS(header=d)
+
+

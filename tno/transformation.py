@@ -200,4 +200,16 @@ def dist_to_point(elements, epoch, element_type, point, helio = False, ecliptic 
 	return r
 
 
+def table_to_matrix(table):
+	'''
+	Using a table of covariance matrix elements, in cartesian space, constructs the 6x6 covariance matrix
+	'''
+	cov = np.array([[table['Sigma_x_x'], table['Sigma_x_y'], table['Sigma_x_z'], table['Sigma_x_vx'], table['Sigma_x_vy'], table['Sigma_x_vz']],
+					[table['Sigma_x_y'], table['Sigma_y_y'], table['Sigma_y_z'], table['Sigma_y_vx'], table['Sigma_y_vy'], table['Sigma_y_vz']],
+					[table['Sigma_x_z'], table['Sigma_y_z'], table['Sigma_z_z'], table['Sigma_z_vx'], table['Sigma_z_vy'], table['Sigma_z_vz']],
+					[table['Sigma_x_vx'],table['Sigma_y_vx'], table['Sigma_z_vx'], table['Sigma_vx_vx'], table['Sigma_vx_vy'], table['Sigma_vx_vz']],
+					[table['Sigma_x_vy'], table['Sigma_y_vy'], table['Sigma_z_vy'], table['Sigma_vx_vy'], table['Sigma_vy_vy'], table['Sigma_vy_vz']],
+					[table['Sigma_x_vz'], table['Sigma_y_vz'], table['Sigma_z_vz'], table['Sigma_vx_vz'], table['Sigma_vy_vz'], table['Sigma_vz_vz']]])
+	return cov.T
+
 

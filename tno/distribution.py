@@ -17,8 +17,12 @@ class BaseDistribution:
 		pass
 	def __add__(self, other):
 		return JointDistribution(self, other, 0.5)
+	def __len__(self):
+		return 0
+
 	def sample(self, n):
 		return np.zeros(n)
+
 
 class AnalyticDistribution(BaseDistribution):
 	'''	

@@ -57,9 +57,9 @@ class DECamExposure:
 		return 180.*(np.arcsin(sin_ra))/np.pi + self.ra, 180.*np.arcsin(sin_dec)/np.pi 
  
 
-	def checkInCCD(self, ra_list, dec_list, ccd_tree = None, ccd_keys = None, ccdsize = 0.149931):
+	def checkInCCDFast(self, ra_list, dec_list, ccd_tree = None, ccd_keys = None, ccdsize = 0.149931):
 		'''
-		Checks if a list of RAs and Decs are inside a DECam CCD, returns indices that are inside and which CCD they belong to
+		Checks if a list of RAs and Decs are inside a DECam CCD in an approximate way, returns indices that are inside and which CCD they belong to
 		'''
 		if ccd_tree == None:
 			ccd_tree, ccd_keys = ccd.create_ccdtree()
@@ -88,6 +88,28 @@ class DECamExposure:
 	def __str__(self):
 		return 'DECam exposure {} taken with {} band. RA: {} Dec: {} MJD: {}'.format(self.expnum, self.band, self.ra, self.dec, self.mjd)
 
+	def checkInCCDRigorous(self, ra_list, dec_list, ccd_list):
+		'''
+		Checks if the object is really inside the CCD using the corners table and a 
+		'''
+		from ccd import ray_tracing
+
+		try:
+			self.corners
+		except:
+			raise AttributeError("Exposure doesn't have dict of corners. Perhaps run Survey.collectCorners?")
+		
+		inside = []
+
+		for ra, dec, ccd in zip(ra_list, dec_list, ccd_list):
+			inside.append(ray_tracing(ra, dec, self.corners[ccd]))
+		
+		return inside
+
+
+
+
+
 
 class Survey:
 	'''
@@ -104,11 +126,18 @@ class Survey:
 		self.corners = corners
 
 	def createExposures(self):
+		'''
+		Creates a dictionary of DECamExposures for the Survey
+		'''
 		self.exposures = {}
 		for ra,dec,mjd,n,b in zip(self.ra, self.dec, self.mjd, self.expnum, self.band):
 			self.exposures[n] = DECamExposure(n, ra, dec, mjd, b)
 
 	def createObservations(self, population, outputfile):
+		'''
+		Calls ORBITSPP/DESTracks to generate observations for the input population, saves them in the outputfile 
+		and returns this table
+		'''
 		orbitspp = os.getenv('ORBITSPP')
 		with open('elements.txt', 'w') as f:
 			for j,i in enumerate(population.elements):
@@ -123,10 +152,45 @@ class Survey:
 							'-exposureFile={}'.format(self.track), '-tdb0={}'.format(population.epoch), '-positionFile={}'.format(outputfile)
 							,'-readState={}'.format(population.state)], stdin = f)
 
-		return tb.Table.read(outputfile)
+		population.observations =  tb.Table.read(outputfile)
 
 	def __getitem__(self, key):
 		try:
 			return self.exposures[key]
-		except:
+		except AttributeError:
 			raise AttributeError("Survey does not have a list of DECamExposures!")
+		except KeyError:
+			raise KeyError("Exposure {} not in survey".format(key))
+
+	def collectCorners(self):
+		'''	
+		Uses the CCD corners table to build a list of CCDs
+		'''
+		if self.corners == None:
+			raise ValueError("No table of CCD corners!")
+		else:
+			corners = tb.Table.read(self.corners)
+		try:
+			self.exposures
+		except AttributeError:
+			self.createExposures()
+
+		
+
+		for i in self.exposures:
+			exp = corners[corners['expnum'] == i]
+
+			self.exposures[i].corners = {}
+
+			for j in exp:
+				ra = j['ra'][:-1]
+				dec = j['dec'][:-1]
+
+				self.exposures[i].corners[j['ccdnum']] = [[r,d] for r,d in zip(ra,dec)]
+
+
+
+
+
+
+

@@ -8,12 +8,13 @@ Python:
 - `numpy`
 - `astropy`
 - `scipy`
-- (When astrometry is implemented): `pixmappy` (https://github.com/gbernstein/pixmappy)
+- `numba` 
+- `pixmappy` (https://github.com/gbernstein/pixmappy)
 
 External:
 - `orbitspp` (https://github.com/gbernstein/orbitspp) and dependencies
 
 #### Installation
-Make sure your environment has a `ORBITSPP` variable pointing to the `bin` folder of your `orbitspp` installation. In order to use the `des`-specific functions, you'll need the correspondent exposure and ccd corner file, located in a folder defined by the `DESDATA` environment variable.
+Make sure your environment has a `ORBITSPP` variable pointing to the `bin` folder of your `orbitspp` installation. In order to use the `des`-specific functions, you'll need the correspondent exposure and ccd corner file, located in a folder defined by the `DESDATA` environment variable. You may need to compile the `tno/popstat` program for the numba libraries.
 
 This is not yet a proper Python package, so you'll have to manually add the `des` and `tno` folders to your path.

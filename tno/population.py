@@ -8,6 +8,10 @@ import copy
 from transformation import * 
 
 def fibonacci_sphere(n_grid):
+	'''
+	Generates a 3d Fibonacci sphere shell (see, eg, González, Á. 2010, Mathematical Geosciences, 42, 49, doi: 10.1007/s11004-009-9257-x) 
+	for a certain n_grid. Generates 2n + 1 points
+	'''
 	sin_phi = 2*np.arange(-n_grid, n_grid, 1, dtype=float)/(2*n_grid + 1.)
 	theta = 2*np.pi * np.arange(-n_grid, n_grid, 1, dtype=float)/(0.5*(1. + np.sqrt(5)))**2
 	x_shell = np.sqrt(1-sin_phi*sin_phi) * np.cos(theta)
@@ -46,7 +50,6 @@ class Population:
 		else:
 			raise ValueError("Magnitude type (mag_type) must be either absolute or apparent")
 		
-
 		if len(distribution) > 0:
 			mag_band = np.zeros(self.n_objects)
 			for i, dist in enumerate(distribution):
@@ -71,12 +74,19 @@ class Population:
 			mag_table['m_' + band] = mag_band + 5 * np.log10(sun_dist * obs_dist)
 
 			for i in colors:
-				mag_table['m_' + i] = mag_table['H_' + i] - colors[i] 
+				mag_table['m_' + i] = mag_band - colors[i]  + 5 * np.log10(sun_dist * obs_dist)
 
 		self.mag = mag_table
 
+		band_stack = [] 
 
-
+		for i in ['g', 'r', 'i', 'z', 'Y']:
+			band = mag_table['ORBITID', 'm_' + i]
+			band.rename_column('m_' + i, 'MAG')
+			band['BAND'] = i 
+			band_stack.append(band)
+		
+		self.mag_obs = tb.vstack(band_stack)a
 
 	def createCopies(self, n_clones):
 		'''
@@ -85,30 +95,6 @@ class Population:
 
 		self.elements = np.vstack([self.elements for i in range(n_clones)])
 		self.n_objects *= n_clones
-
-	def __str__(self):
-		return "Population with {} objects. Elements are of type {}".format(self.n_objects, self.elementType)
-
-	def __add__(self, other):
-		if self.elementType != other.elementType:
-			raise ValueError("The elements of each population must be of the same type")
-		if self.epoch != other.epoch:
-			raise ValueError("The epochs must be the same")
-		newpop = Population(self.n_objects + other.n_objects, self.elementType, self.epoch)
-		newpop.elements[0:self.n_objects,:] = self.elements
-		newpop.elements[self.n_objects:,:] = other.elements
-		return newpop
-
-	def write(self, filename):
-		with open(filename, 'wb') as f:
-			pickle.dump(self, f, protocol = 2)
-	@staticmethod
-	def read(filename):
-		with open(filename, 'rb') as f:
-			return pickle.load(f)
-
-	def __getitem__(self, index):
-		return self.elements[index,:]
 
 	def sampleElements(self, covariances, n_samples):
 		'''
@@ -141,6 +127,47 @@ class Population:
 
 		r = dist_to_point(self.elements, self.epoch, self.elementType, point, helio, ecliptic)
 		return r 
+
+	def computeStatistics(self):
+		'''
+		Computes ARC, ARCCUT and NUNIQUE for each member of the population. Requires a preliminary survey.observePopulation call
+		'''
+		try:
+			self.detections
+		except:
+			raise AttributeError("Population has no detections attribute. Perhaps you need to call survey.observePopulation first?")
+
+		for i in range(self.n_objects):
+			
+
+	# Standard class methods
+	def __str__(self):
+		return "Population with {} objects. Elements are of type {}".format(self.n_objects, self.elementType)
+
+	def __add__(self, other):
+		if self.elementType != other.elementType:
+			raise ValueError("The elements of each population must be of the same type")
+		if self.epoch != other.epoch:
+			raise ValueError("The epochs must be the same")
+		newpop = Population(self.n_objects + other.n_objects, self.elementType, self.epoch)
+		newpop.elements[0:self.n_objects,:] = self.elements
+		newpop.elements[self.n_objects:,:] = other.elements
+		return newpop
+
+	def __len__(self):
+		return self.n_objects
+
+	def write(self, filename):
+		with open(filename, 'wb') as f:
+			pickle.dump(self, f, protocol = 2)
+	@staticmethod
+	def read(filename):
+		with open(filename, 'rb') as f:
+			return pickle.load(f)
+
+	def __getitem__(self, index):
+		return self.elements[index,:]
+
 
 class IsotropicPopulation(Population):
 	def __init__(self, n_grid, epoch):
@@ -262,7 +289,7 @@ class ElementPopulation(Population):
 		self.elements[:,5] = self.epoch - (np.random.rand(self.n_objects) * 2* np.pi - np.pi) * np.power(self.elements[:,0], 3./2)
 
 	def randomizeInclination(self):
-		self.elements[:,element] = np.arccos(np.random.rand(self.n_objects)*2 - 1) * 180/np.pi
+		self.elements[:,2] = np.arccos(np.random.rand(self.n_objects)*2 - 1) * 180/np.pi
 
 	def transformElements(self, heliocentric = False, ecliptic = False):
 		'''
