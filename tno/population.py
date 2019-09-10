@@ -35,7 +35,7 @@ class Population:
 		else:
 			self.state = 'T'
 	
-	def generateMagnitudes(self, distribution, mag_type, band, colors = None, observer_pos = None, helio = False, ecliptic = False):
+	def generateMagnitudes(self, distribution, mag_type, band, colors = None, observer_pos = [1,0,0], helio = False, ecliptic = False):
 		'''
 		Depends on magnitude distributions from `distribution.py`. 
 		distribution can be a list/array of distributions, in which case the magnitude of object i will come from distribution[i] 
@@ -86,7 +86,7 @@ class Population:
 			band['BAND'] = i 
 			band_stack.append(band)
 		
-		self.mag_obs = tb.vstack(band_stack)a
+		self.mag_obs = tb.vstack(band_stack)
 
 	def createCopies(self, n_clones):
 		'''
@@ -132,13 +132,36 @@ class Population:
 		'''
 		Computes ARC, ARCCUT and NUNIQUE for each member of the population. Requires a preliminary survey.observePopulation call
 		'''
+		import popstat
 		try:
 			self.detections
 		except:
 			raise AttributeError("Population has no detections attribute. Perhaps you need to call survey.observePopulation first?")
 
-		for i in range(self.n_objects):
-			
+		self.detections.add_index('ORBITID')
+
+		stat = tb.Table(names=['ORBITID', 'ARC', 'ARCCUT', 'NUNIQUE', 'NDETECT'], dtype=['i8', 'f8', 'f8', 'i8', 'i8'])
+
+		for i in np.unique(self.detections['ORBITID']):
+			obj = tb.Table(self.detections.loc[i])
+			if len(obj) > 1:
+				arc = (np.max(obj['TDB']) - np.min(obj['TDB'])) * 365.25
+				times = np.array(obj['TDB']) * 365.25
+				arccut = popstat.compute_arccut(times)
+				nunique = popstat.compute_nunique(times)
+				stat.add_row([i, arc, arccut, nunique, len(obj)])
+			else:
+				stat.add_row([i, 0., 0., 1, 1])
+
+		for i in np.arange(len(self))[np.isin(np.arange(len(self)),np.unique(self.detections['ORBITID']), invert = True)]:
+			stat.add_row([i, 0, 0, 0, 0])
+
+		stat.sort('ORBITID')
+
+		self.statistics = stat
+
+
+
 
 	# Standard class methods
 	def __str__(self):

@@ -176,18 +176,21 @@ class Survey:
 			self.createExposures()
 
 		
+		corners.add_index('expnum')
 
 		for i in self.exposures:
-			exp = corners[corners['expnum'] == i]
+			try:
+				exp = corners.loc[i]
 
-			self.exposures[i].corners = {}
+				self.exposures[i].corners = {}
 
-			for j in exp:
-				ra = j['ra'][:-1]
-				dec = j['dec'][:-1]
+				for j in exp:
+					ra = j['ra'][:-1]
+					dec = j['dec'][:-1]
 
-				self.exposures[i].corners[j['ccdnum']] = [[r,d] for r,d in zip(ra,dec)]
-
+					self.exposures[i].corners[j['ccdnum']] = [[r,d] for r,d in zip(ra,dec)]
+			except:
+				self.exposures[i].corners = None
 
 
 

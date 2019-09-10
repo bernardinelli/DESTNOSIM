@@ -2,7 +2,6 @@ from decam import *
 import os 
 import astropy.table as tb
 from astropy.wcs import WCS
-from pixmappy import DESMaps
 
 class DESExposure(DECamExposure):
 	'''
@@ -34,12 +33,16 @@ class DESExposure(DECamExposure):
 			raise ValueError("No CCD solution for {}/{}!".format(self.expnum, ccd))
 
 
-	def createWCSDict(self, pmc = DESMaps()):
+	def createWCSDict(self, pmc = None):
 		'''
 		Uses pixmappy to grab the CCD WCS solution
 		'''
 		self.wcs = {}
 		self.fullwcs = True
+		if pmc == None:
+			from pixmappy import DESMaps
+			pmc = DESMaps()
+
 		for i in range(1,63):
 			if i != 61:
 				try:
@@ -49,10 +52,14 @@ class DESExposure(DECamExposure):
 					if i != 31 or i != 2:
 						self.fullwcs = False
 	
-	def getWCS(self, ccdnum, pmc = DESMaps()):
+	def getWCS(self, ccdnum, pmc = None):
 		'''
 		Uses pixmappy to grab the CCD WCS solution
 		'''
+		if pmc == None:
+			from pixmappy import DESMaps
+			pmc = DESMaps()
+
 		return pmc.getDESWCS(self.expnum, ccdnum)
 
 	def makeWCS(self, expinfo):
@@ -140,7 +147,7 @@ class DES(Survey):
 			raise AttributeError("Population has no observations")
 
 		try:
-			self[i]
+			self.exposures
 		except:
 			raise AttributeError("Survey does not have a list of DESExposures")
 

@@ -1,6 +1,6 @@
 from __future__ import print_function
 import numpy as np 
-from scipy.optimize import root
+from numba import vectorize
 
 '''
 Solar system constants
@@ -145,6 +145,21 @@ def dqdt(E, a, e, mu):
         else:
         	return np.array([q1,q2,np.zeros_like(a)])
 
+
+@vectorize(["float32(float32,float32)", "float64(float64,float64)"],nopython=True)
+def solve_anomaly(e, M0):
+	'''
+	Super fast way of computing the true anomaly. Uses numba vectorization
+	'''
+	sol = M0
+	delta = 0.0
+	ones = 1.0
+	for i in range(100):
+		delta = (M0 - (sol - e * np.sin(sol)))/(ones - e*np.cos(sol))
+		sol += delta
+	return sol
+
+
 def keplerian_to_cartesian(keplerian, epoch, helio = False, ecliptic = False):
 	'''
 	Goes from Keplerian elements to ecliptic or equatorial state vectors
@@ -153,13 +168,12 @@ def keplerian_to_cartesian(keplerian, epoch, helio = False, ecliptic = False):
 	mu = SunGM if helio else SolarSystemGM
 
 
-	M0 = (epoch - keplerian[:,5])*(np.sqrt(mu)/np.power(keplerian[:,0],3./2))
+	M0 = np.array((epoch - keplerian[:,5])*(np.sqrt(mu)/np.power(keplerian[:,0],3./2)))
 	#print(M0)
 
-	f = lambda E :  E - keplerian[:,1]*np.sin(E) - M0
 
-
-	E = root(f, np.zeros_like(keplerian[:,0])).x
+	E = solve_anomaly(np.array(keplerian[:,1]), M0)
+	#return M0, E, keplerian[:,1]
 
 	q_vec = q(E, keplerian[:,0], keplerian[:,1])
 
