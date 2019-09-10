@@ -301,15 +301,24 @@ class ElementPopulation(Population):
 		else:
 			raise ValueError("Please provide either time of perihelion passage (top) or mean anomaly (man)/semi-major axis (a) as input")
 
-	def randomizeAngle(self, element):
+	def randomizeAngle(self, element, uniform = True):
 		eldic = {'lan' : 3, 'aop' : 4}
 		if type(element) is int:
-			self.elements[:,element] = np.random.rand(self.n_objects)*360
+			if uniform:
+				self.elements[:,element] = np.linspace(0, 1, self.n_objects) * 360
+			else:
+				self.elements[:,element] = np.random.rand(self.n_objects)*360
 		else:
-			self.elements[:,eldic[element]] = np.random.rand(self.n_objects)*360
+			if uniform:
+				self.elements[:,eldic[element]] = np.linspace(0, 1, self.n_objects) * 360
+			else:
+				self.elements[:,eldic[element]] = np.random.rand(self.n_objects)*360
 
-	def randomizeToP(self):
-		self.elements[:,5] = self.epoch - (np.random.rand(self.n_objects) * 2* np.pi - np.pi) * np.power(self.elements[:,0], 3./2)
+	def randomizeToP(self, uniform = True):
+		if uniform:
+			self.elements[:,5] = self.epoch - (np.linspace(0, 1, self.n_objects)*2*np.pi - np.pi) * np.power(self.elements[:,0], 3./2)
+		else:
+			self.elements[:,5] = self.epoch - (np.random.rand(self.n_objects) * 2* np.pi - np.pi) * np.power(self.elements[:,0], 3./2)
 
 	def randomizeInclination(self):
 		self.elements[:,2] = np.arccos(np.random.rand(self.n_objects)*2 - 1) * 180/np.pi
