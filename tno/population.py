@@ -138,6 +138,9 @@ class Population:
 		except:
 			raise AttributeError("Population has no detections attribute. Perhaps you need to call survey.observePopulation first?")
 
+		#consider only detections inside a CCD
+		self.detections = self.detections[self.detections['CCDNUM'] != 0]
+		#index the table to make things easier
 		self.detections.add_index('ORBITID')
 
 		stat = tb.Table(names=['ORBITID', 'ARC', 'ARCCUT', 'NUNIQUE', 'NDETECT'], dtype=['i8', 'f8', 'f8', 'i8', 'i8'])
@@ -160,7 +163,11 @@ class Population:
 
 		self.statistics = stat
 
-
+	def randomizeElement(self, element, distribution):
+		'''
+		Randomizes element (must be an integer between 0 and 5) according to the provided distribution (from `distribution.py`)
+		'''
+		self.elements[:,element] = distribution.sample(self.n_objects)
 
 
 	# Standard class methods
@@ -301,24 +308,30 @@ class ElementPopulation(Population):
 		else:
 			raise ValueError("Please provide either time of perihelion passage (top) or mean anomaly (man)/semi-major axis (a) as input")
 
-	def randomizeAngle(self, element, uniform = True):
+	def randomizeAngle(self, element, min_angle = 0, max_angle = 360, uniform = True):
+		'''
+		Randomizes argument of perihelion or longitude of ascending node by either randomizing the angles or sampling all possible values
+		between min_angle (= 0 deg by default) and max_angle (= 360 deg by default)
+		'''
 		eldic = {'lan' : 3, 'aop' : 4}
-		if type(element) is int:
-			if uniform:
-				self.elements[:,element] = np.linspace(0, 1, self.n_objects) * 360
-			else:
-				self.elements[:,element] = np.random.rand(self.n_objects)*360
-		else:
-			if uniform:
-				self.elements[:,eldic[element]] = np.linspace(0, 1, self.n_objects) * 360
-			else:
-				self.elements[:,eldic[element]] = np.random.rand(self.n_objects)*360
-
-	def randomizeToP(self, uniform = True):
+		if type(element) is str:
+			element = eldic[element]
 		if uniform:
-			self.elements[:,5] = self.epoch - (np.linspace(0, 1, self.n_objects)*2*np.pi - np.pi) * np.power(self.elements[:,0], 3./2)
+			self.elements[:,element] = np.linspace(min_angle, max_angle, self.n_objects) 
 		else:
-			self.elements[:,5] = self.epoch - (np.random.rand(self.n_objects) * 2* np.pi - np.pi) * np.power(self.elements[:,0], 3./2)
+			self.elements[:,element] = np.random.rand(self.n_objects)*(max_angle - min_angle) + min_angle
+
+	def randomizeToP(self, min_angle = -180., max_angle = 180., uniform = True, heliocentric = True):
+		'''
+		Randomizes the Time of Perihelion passage by randomizing the true anomaly between min_angle ( =-180 deg, by default) and max_angle (180 deg)
+		in either a uniform fashion (i.e. covers the entire parameter space) or drawing ran
+		'''
+		mu = SunGM if heliocentric else SolarSystemGM
+
+		if uniform:
+			self.elements[:,5] = self.epoch - (np.linspace(min_angle, max_angle, self.n_objects)*np.pi/180.) * np.power(self.elements[:,0], 3./2)/np.sqrt(mu)
+		else:
+			self.elements[:,5] = self.epoch - (np.random.rand(self.n_objects) * (max_angle - min_angle) - min_angle) * np.pi/180. * np.power(self.elements[:,0], 3./2)/np.sqrt(mu)
 
 	def randomizeInclination(self):
 		self.elements[:,2] = np.arccos(np.random.rand(self.n_objects)*2 - 1) * 180/np.pi

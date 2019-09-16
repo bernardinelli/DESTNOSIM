@@ -8,3 +8,7 @@ Notebooks/Clustering of ETNOs.ipynb
 Notebooks/MPC observations.ipynb
 *.fits
 Notebooks/MPC observations.ipynb
+*.so
+*.pop
+*.fits
+scripts/
