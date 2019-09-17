@@ -9,7 +9,7 @@ from transformation import *
 
 def fibonacci_sphere(n_grid):
 	'''
-	Generates a 3d Fibonacci sphere shell (see, eg, González, A. 2010, Mathematical Geosciences, 42, 49, doi: 10.1007/s11004-009-9257-x) 
+	Generates a 3d Fibonacci sphere shell (see, eg, Gonzalez, A. 2010, Mathematical Geosciences, 42, 49, doi: 10.1007/s11004-009-9257-x) 
 	for a certain n_grid. Generates 2n + 1 points
 	'''
 	sin_phi = 2*np.arange(-n_grid, n_grid, 1, dtype=float)/(2*n_grid + 1.)

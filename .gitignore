@@ -12,3 +12,4 @@ Notebooks/MPC observations.ipynb
 *.pop
 *.fits
 scripts/
+*.plist

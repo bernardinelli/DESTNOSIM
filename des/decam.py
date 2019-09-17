@@ -139,20 +139,20 @@ class Survey:
 		and returns this table
 		'''
 		orbitspp = os.getenv('ORBITSPP')
-		with open('elements.txt', 'w') as f:
+		with open('{}.txt'.format(outputfile), 'w') as f:
 			for j,i in enumerate(population.elements):
 				print(j, i[0],i[1],i[2],i[3],i[4],i[5], file = f)
-		with open('elements.txt', 'r') as f:
+		with open('{}.txt'.format(outputfile), 'w') as f:
 
 			print(' '.join([orbitspp + '/DESTracks', '-cornerFile={}'.format(self.corners), 
-							'-exposureFile={}'.format(self.track), '-tdb0={}'.format(population.epoch), '-positionFile={}'.format(outputfile)
+							'-exposureFile={}'.format(self.track), '-tdb0={}'.format(population.epoch), '-positionFile={}.fits'.format(outputfile)
 							,'-readState={}'.format(population.state) ,'< elements.txt']))
 
 			subprocess.call([orbitspp + '/DESTracks', '-cornerFile={}'.format(self.corners), 
-							'-exposureFile={}'.format(self.track), '-tdb0={}'.format(population.epoch), '-positionFile={}'.format(outputfile)
+							'-exposureFile={}'.format(self.track), '-tdb0={}'.format(population.epoch), '-positionFile={}.fits'.format(outputfile)
 							,'-readState={}'.format(population.state)], stdin = f)
 
-		population.observations =  tb.Table.read(outputfile)
+		population.observations =  tb.Table.read(outputfile + '.fits')
 
 	def __getitem__(self, key):
 		try:
