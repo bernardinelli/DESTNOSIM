@@ -146,7 +146,7 @@ class Survey:
 
 			print(' '.join([orbitspp + '/DESTracks', '-cornerFile={}'.format(self.corners), 
 							'-exposureFile={}'.format(self.track), '-tdb0={}'.format(population.epoch), '-positionFile={}.fits'.format(outputfile)
-							,'-readState={}'.format(population.state) ,'< elements.txt']))
+							,'-readState={}'.format(population.state) ,'< {}.txt'.format(outputfile)]))
 
 			subprocess.call([orbitspp + '/DESTracks', '-cornerFile={}'.format(self.corners), 
 							'-exposureFile={}'.format(self.track), '-tdb0={}'.format(population.epoch), '-positionFile={}.fits'.format(outputfile)
