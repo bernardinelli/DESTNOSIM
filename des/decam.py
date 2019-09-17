@@ -142,7 +142,8 @@ class Survey:
 		with open('{}.txt'.format(outputfile), 'w') as f:
 			for j,i in enumerate(population.elements):
 				print(j, i[0],i[1],i[2],i[3],i[4],i[5], file = f)
-		with open('{}.txt'.format(outputfile), 'w') as f:
+				
+		with open('{}.txt'.format(outputfile), 'r') as f:
 
 			print(' '.join([orbitspp + '/DESTracks', '-cornerFile={}'.format(self.corners), 
 							'-exposureFile={}'.format(self.track), '-tdb0={}'.format(population.epoch), '-positionFile={}.fits'.format(outputfile)
