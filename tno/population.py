@@ -139,7 +139,7 @@ class Population:
 			raise AttributeError("Population has no detections attribute. Perhaps you need to call survey.observePopulation first?")
 
 		#consider only detections inside a CCD
-		self.detections = self.detections[self.detections['CCDNUM'] != 0]
+		self.detections.remove_rows(np.where(self.detections['CCDNUM'] == 0))
 		#index the table to make things easier
 		self.detections.add_index('ORBITID')
 
@@ -156,8 +156,8 @@ class Population:
 			else:
 				stat.add_row([i, 0., 0., 1, 1])
 
-		for i in np.arange(len(self))[np.isin(np.arange(len(self)),np.unique(self.detections['ORBITID']), invert = True)]:
-			stat.add_row([i, 0, 0, 0, 0])
+		'''for i in np.arange(len(self))[np.isin(np.arange(len(self)),np.unique(self.detections['ORBITID']), invert = True)]:
+			stat.add_row([i, 0, 0, 0, 0])'''
 
 		stat.sort('ORBITID')
 

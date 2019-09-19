@@ -213,6 +213,46 @@ def dist_to_point(elements, epoch, element_type, point, helio = False, ecliptic 
 
 	return r
 
+def bary_to_helio(elements, element_type, epoch, sun_coordinates, ecliptic = False):
+	'''
+	Converts a set of barycentric elements (either Keplerian or cartesian) to heliocentric, returning them in the same fashion
+	sun_coordinates must be a 6D vector in (AU,AU/yr)
+	'''
+	if element_type == 'keplerian':
+		xv = keplerian_to_cartesian(elements, epoch, False, ecliptic)
+	elif element_type == 'cartesian':
+		xv = elements
+	else:
+		raise ValueError("Element type must either be keplerian or cartesian!")
+
+	
+	new_elements = xv[:,] - sun_coordinates
+
+	if element_type == 'keplerian':
+		new_elements = cartesian_to_keplerian(new_elements, epoch, True, ecliptic)
+
+	return new_elements
+
+def helio_to_bary(elements, element_type, epoch, bary_coordinates, ecliptic = False):
+	'''
+	Converts a set of heliocentric elements (either Keplerian or cartesian) to barycentric, returning them in the same fashion
+	bary_coordinates must be a 6D vector in (AU,AU/yr)
+	'''
+	if element_type == 'keplerian':
+		xv = keplerian_to_cartesian(elements, epoch, True, ecliptic)
+	elif element_type == 'cartesian':
+		xv = elements
+	else:
+		raise ValueError("Element type must either be keplerian or cartesian!")
+
+	
+	new_elements = xv[:,] - bary_coordinates
+
+	if element_type == 'keplerian':
+		new_elements = cartesian_to_keplerian(new_elements, epoch, False, ecliptic)
+
+	return new_elements
+
 
 def table_to_matrix(table):
 	'''
