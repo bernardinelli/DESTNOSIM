@@ -1,6 +1,5 @@
 import numpy as np 
 from scipy.spatial import cKDTree
-from astropy.wcs import WCS
 
 ccdBounds = {'N1': (-1.0811, -0.782681, -0.157306, -0.00750506),
              'N2': (-0.771362, -0.472493, -0.157385, -0.00749848), 
@@ -93,6 +92,9 @@ def create_ccdtree():
 
 
 def ray_tracing(x,y,poly):
+    ''' 
+    Ray tracing algorithm that tests if a point is inside the poly(gon) coordinates given
+    '''
     n = len(poly)
     inside = False
     p2x = 0.0
@@ -118,6 +120,8 @@ def get_wcs_table(table):
     Generates a WCS dictionary using astropy.wcs and the wcs table for the exposure. 
     Note that these are not the pixmappy solutions, so are less accurate
     '''
+    from astropy.wcs import WCS
+
     d = {k:table[k] for k in table.colnames}
     return WCS(header=d)
 
