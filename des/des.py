@@ -154,7 +154,9 @@ class DES(Survey):
 		exp = tb.Table()
 		exp['EXPNUM'] = self.expnum
 		exp['BAND'] = self.band
-
+		#we don't need all exposures - should save memory
+		exp = exp[np.isin(exp['EXPNUM'], population.observations['EXPNUM'])]
+		
 		obs = tb.join(population.observations, exp)
 		obs = tb.join(obs, population.mag_obs)
 
