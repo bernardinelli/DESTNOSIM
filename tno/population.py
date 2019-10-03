@@ -146,13 +146,13 @@ class Population:
 		stat = tb.Table(names=['ORBITID', 'ARC', 'ARCCUT', 'NUNIQUE', 'NDETECT'], dtype=['i8', 'f8', 'f8', 'i8', 'i8'])
 
 		for i in np.unique(self.detections['ORBITID']):
-			obj = tb.Table(self.detections.loc[i])
+			obj = self.detections.loc[i]
 			if len(obj) > 1:
-				arc = (np.max(obj['TDB']) - np.min(obj['TDB'])) * 365.25
 				times = np.array(obj['TDB']) * 365.25
+				arc = np.max(times) - np.min(times)
 				arccut = popstat.compute_arccut(times)
 				nunique = popstat.compute_nunique(times)
-				stat.add_row([i, arc, arccut, nunique, len(obj)])
+				stat.add_row([i, arc, arccut, nunique, len(times)])
 			else:
 				stat.add_row([i, 0., 0., 1, 1])
 

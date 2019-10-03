@@ -156,13 +156,19 @@ class DES(Survey):
 		exp['BAND'] = self.band
 		#we don't need all exposures - should save memory
 		exp = exp[np.isin(exp['EXPNUM'], population.observations['EXPNUM'])]
-		
+
 		obs = tb.join(population.observations, exp)
-		obs = tb.join(obs, population.mag_obs)
+
+		# remove what doesn't have observations before joining!
+		mags = population.mag_obs[np.isin(population.mag_obs['ORBITID'], np.unique(obs['ORBITID']))]
+		
+		obs = tb.join(obs, mags)
+
+		obs.add_index('EXPNUM')
 
 		det = []
 		for i in np.unique(obs['EXPNUM']):
-			exp_obs = obs[obs['EXPNUM'] == i]
+			exp_obs = tb.Table(obs.loc[i])
 
 			try:
 				exp_obs['DETPROB'] = self[i].probDetection(exp_obs['MAG'])
