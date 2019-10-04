@@ -1,4 +1,4 @@
-#import numpy as np 
+import numpy as np 
 import numba
 
 from numba.pycc import CC
@@ -16,8 +16,8 @@ def compute_arccut(times):
 	times must be in DAYS
 	'''
 	arccut = 0.
-	t1 = min(times)
-	t2 = max(times)
+	t1 = np.min(times)
+	t2 = np.max(times)
 	t1a = t2
 	t2a = t1
 
