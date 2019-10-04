@@ -144,19 +144,27 @@ class Population:
 		self.detections.add_index('ORBITID')
 
 		stat = tb.Table(names=['ORBITID', 'ARC', 'ARCCUT', 'NUNIQUE', 'NDETECT'], dtype=['i8', 'f8', 'f8', 'i8', 'i8'])
+		ids, counts = np.unique(self.detections['ORBITID'], return_counts = True)
 
-		for i in np.unique(self.detections['ORBITID']):
+		for i in ids[counts > 1]:
 			obj = self.detections.loc[i]
-			if len(obj) > 1:
-				times = np.array(obj['TDB']) * 365.25
-				arc = np.max(times) - np.min(times)
-				arccut = popstat.compute_arccut(times)
-				nunique = popstat.compute_nunique(times)
-				stat.add_row([i, arc, arccut, nunique, len(times)])
-			else:
-				stat.add_row([i, 0., 0., 1, 1])
+			times = np.array(obj['TDB']) * 365.25
+			arc = np.max(times) - np.min(times)
+			arccut = popstat.compute_arccut(times)
+			nunique = popstat.compute_nunique(times)
+			stat.add_row([i, arc, arccut, nunique, len(times)])
 
-		'''for i in np.arange(len(self))[np.isin(np.arange(len(self)),np.unique(self.detections['ORBITID']), invert = True)]:
+		ones = tb.Table()
+		ones['ORBITID'] = ids[counts == 1]
+		ones['ARC'] = 0.
+		ones['ARCCUT'] = 0.
+		ones['NUNIQUE'] = 1
+		ones['NDETECT'] = 1
+
+		stat = tb.vstack([stat, ones])
+
+
+		'''for i in np.arange(len(self))[np.isin(np.arange(len(selfn)),np.unique(self.detections['ORBITID']), invert = True)]:
 			stat.add_row([i, 0, 0, 0, 0])'''
 
 		stat.sort('ORBITID')
