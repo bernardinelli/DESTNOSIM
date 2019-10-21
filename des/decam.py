@@ -90,7 +90,7 @@ class DECamExposure:
 
 	def checkInCCDRigorous(self, ra_list, dec_list, ccd_list):
 		'''
-		Checks if the object is really inside the CCD using the corners table and a 
+		Checks if the object is really inside the CCD using the corners table and a ray tracing algorithm
 		'''
 		from ccd import ray_tracing
 
@@ -162,6 +162,9 @@ class Survey:
 			raise AttributeError("Survey does not have a list of DECamExposures!")
 		except KeyError:
 			raise KeyError("Exposure {} not in survey".format(key))
+
+	def __len__(self):
+		return len(self.expnum)
 
 	def collectCorners(self):
 		'''	

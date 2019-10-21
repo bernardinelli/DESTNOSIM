@@ -7,7 +7,7 @@ import pickle
 import copy
 from transformation import * 
 
-def fibonacci_sphere(n_grid):
+def fibonacci_sphere(n_grid, angles = True):
 	'''
 	Generates a 3d Fibonacci sphere shell (see, eg, Gonzalez, A. 2010, Mathematical Geosciences, 42, 49, doi: 10.1007/s11004-009-9257-x) 
 	for a certain n_grid. Generates 2n + 1 points
@@ -17,7 +17,10 @@ def fibonacci_sphere(n_grid):
 	x_shell = np.sqrt(1-sin_phi*sin_phi) * np.cos(theta)
 	y_shell = np.sqrt(1-sin_phi*sin_phi) * np.sin(theta)
 	z_shell = sin_phi
-	return x_shell, y_shell, z_shell
+	if angles:
+		return x_shell, y_shell, z_shell, sin_phi, theta
+	else:
+		return x_shell, y_shell, z_shell
 
 
 class Population:
@@ -207,51 +210,6 @@ class Population:
 		return self.elements[index,:]
 
 
-class IsotropicPopulation(Population):
-	def __init__(self, n_grid, epoch):
-		### Warning: n_grid defines the _grid size_, which leads to 2n+1 objects
-		Population.__init__(self, 2*n_grid, 'cartesian', epoch)
-		self.n_grid = n_grid
-		self._generateShell()
-		self._generateVelocityShell()
-
-	def _generateShell(self):
-		'''
-		Places objects on a spherical shell of radius 1 AU
-		'''
-		x,y,z = fibonacci_sphere(self.n_grid)
-		self.elements[:,0] = x
-		self.elements[:,1] = y
-		self.elements[:,2] = z
-
-	def generateDistances(self, distribution):
-		'''
-		Generates distances according to the provided distribution
-		''' 
-		r = distribution.sample(self.n_objects)
-
-		self.elements[:,0] *= r
-		self.elements[:,1] *= r
-		self.elements[:,2] *= r
-		self.r = r
-
-	def _generateVelocityShell(self):
-		vx, vy, vz = fibonacci_sphere(self.n_grid)
-		perm = np.random.permutation(self.n_objects)
-
-		self.elements[:,3] = vx[perm]
-		self.elements[:,4] = vy[perm]
-		self.elements[:,5] = vz[perm]
-
-	def generateVelocities(self, distribution):
-		v_circ = SolarSystemGM/np.sqrt(self.r)
-		v_scale = distribution.sample(self.n_objects)
-
-		self.elements[:,3] = v_circ * v_scale
-		self.elements[:,4] = v_circ * v_scale
-		self.elements[:,5] = v_circ * v_scale
-
-
 class ElementPopulation(Population):
 	'''
 	Series of orbital elements that are submitted to `DESTracks`. We need (a,e,i, lan, aop, top). So the user should submit at least 6 elements, and this can convert to the right six if needed
@@ -380,5 +338,83 @@ class CartesianPopulation(Population):
 
 
 
-	
+class IsotropicPopulation(CartesianPopulation):
+	'''
+	Generates two Fibonacci spheres (one for velocities and one for positions) so we can sample objects across all possible parameters
+	'''
+	def __init__(self, n_grid, epoch, drop_outside = True, footprint = 'round17-poly.txt'):
+		### Warning: n_grid defines the _grid size_, which leads to 2n+1 objects
+		Population.__init__(self, 2*n_grid, 'cartesian', epoch)
+		self.n_grid = n_grid
+		self._generateShell()
+		if drop_outside:
+			self.checkInFootprint(footprint)
+		self._generateVelocityShell()
+
+	def _generateShell(self):
+		'''
+		Places objects on a spherical shell of radius 1 AU
+		'''
+		x,y,z, sin_dec, ra = fibonacci_sphere(self.n_grid)
+		self.elements[:,0] = x
+		self.elements[:,1] = y
+		self.elements[:,2] = z
+
+		self.ra = np.mod(ra, 360)
+		self.ra[self.ra>180] -= 360 
+
+		self.dec = 180*np.arcsin(sin_dec)/np.pi
+
+
+	def generateDistances(self, distribution):
+		'''
+		Generates distances according to the provided distribution
+		''' 
+		r = distribution.sample(self.n_objects)
+
+		self.elements[:,0] *= r
+		self.elements[:,1] *= r
+		self.elements[:,2] *= r
+		self.r = r
+
+	def _generateVelocityShell(self):
+		vx, vy, vz = fibonacci_sphere(self.n_grid, False)
+		perm = np.random.permutation(self.n_objects)
+
+		self.elements[:,3] = vx[perm]
+		self.elements[:,4] = vy[perm]
+		self.elements[:,5] = vz[perm]
+
+	def generateVelocities(self, distribution):
+		v_circ = SolarSystemGM/np.sqrt(self.r)
+		v_scale = distribution.sample(self.n_objects)
+
+		self.elements[:,3] = v_circ * v_scale
+		self.elements[:,4] = v_circ * v_scale
+		self.elements[:,5] = v_circ * v_scale
+
+	def checkInFootprint(self, footprint = 'round17-poly.txt'):
+		'''
+		Checks which objects are inside the footprint
+		'''
+		import matplotlib.path as mpath
+		p = np.loadtxt(footprint)
+		path = mpath.Path(p)
+
+		inside = path.contains_points(np.array([self.ra, self.dec]).T)
+
+		self.elements = self.elements[inside]
+
+		self.n_objects = len(self.elements)
+		self.n_grid = self.n_objects/2
+
+
+
+
+
+
+
+
+
+
 

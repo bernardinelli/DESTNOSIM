@@ -154,6 +154,10 @@ class DES(Survey):
 		exp = tb.Table()
 		exp['EXPNUM'] = self.expnum
 		exp['BAND'] = self.band
+		exp['m_50'] = self.m50
+		exp['C'] = self.c 
+		exp['K'] = self.k 
+
 		#we don't need all exposures - should save memory
 		exp = exp[np.isin(exp['EXPNUM'], population.observations['EXPNUM'])]
 
@@ -164,9 +168,10 @@ class DES(Survey):
 		
 		obs = tb.join(obs, mags)
 
-		obs.add_index('EXPNUM')
+		del exp, mags
+		#obs.add_index('EXPNUM')
 
-		det = []
+		'''det = []
 		for i in np.unique(obs['EXPNUM']):
 			exp_obs = tb.Table(obs.loc[i])
 
@@ -176,14 +181,19 @@ class DES(Survey):
 			except:
 				pass
 
-		det = tb.vstack(det)
+		det = tb.vstack(det)'''
 
-		det['RANDOM'] = np.random.rand(len(det))
+		obs['DETPROB'] = obs['C']/(1. + np.exp(obs['K'] * (obs['MAG'] - obs['m_50'])))
+
+
+		obs['RANDOM'] = np.random.rand(len(obs))
+
+		del obs['m_50', 'C', 'K']
 
 		if not keepall:
-			det = det[det['DETPROB'] > det['RANDOM']]
+			obs = obs[obs['DETPROB'] > obs['RANDOM']]
 
-		population.detections = det
+		population.detections = obs
 
 
 
