@@ -102,7 +102,10 @@ class DECamExposure:
 		inside = []
 
 		for ra, dec, ccd in zip(ra_list, dec_list, ccd_list):
-			inside.append(ray_tracing(ra, dec, self.corners[ccd]))
+			try:
+				inside.append(ray_tracing(ra, dec, self.corners[ccd]))
+			except KeyError:
+				inside.append(False)
 		
 		return inside
 

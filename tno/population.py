@@ -386,7 +386,7 @@ class IsotropicPopulation(CartesianPopulation):
 		self.elements[:,5] = vz[perm]
 
 	def generateVelocities(self, distribution):
-		v_circ = SolarSystemGM/np.sqrt(self.r)
+		v_circ = np.sqrt(2*SolarSystemGM/self.r)
 		v_scale = distribution.sample(self.n_objects)
 
 		self.elements[:,3] = v_circ * v_scale
@@ -406,7 +406,7 @@ class IsotropicPopulation(CartesianPopulation):
 		self.elements = self.elements[inside]
 
 		self.n_objects = len(self.elements)
-		self.n_grid = self.n_objects/2
+		self.n_grid = self.n_objects//2
 
 
 

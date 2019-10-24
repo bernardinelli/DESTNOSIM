@@ -13,3 +13,5 @@ Notebooks/MPC observations.ipynb
 *.fits
 scripts/
 *.plist
+*.pdf
+*.png
