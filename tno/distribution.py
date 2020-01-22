@@ -13,7 +13,7 @@ class BaseDistribution:
 	'''
 	Base class that all others inherit from. It corresponds to a delta function at zero. 
 	'''
-	def _init__(self):
+	def __init__(self):
 		pass
 	def __add__(self, other):
 		return JointDistribution(self, other, 0.5)
@@ -136,7 +136,7 @@ class DoublePowerLaw(AnalyticDistribution):
 
 class RollingPowerLaw(AnalyticDistribution):
 	def __init__(self, slope, derivative, x_min, x_max, x_shift):
-		self.slope = slode
+		self.slope = slope
 		self.derivative = derivative
 		self.x_shift = x_shift
 		self.x_min = x_min
@@ -144,7 +144,7 @@ class RollingPowerLaw(AnalyticDistribution):
 		self.f = lambda x : np.power(10, slope * (x - x_shift) + derivative * (x - x_shift)**2 )
 		AnalyticDistribution.__init__(self, x_min, x_max, self.f)
 
-		
+
 class BrownDistribution(AnalyticDistribution):
 	def __init__(self, x_min, x_max, sigma):
 		self.sigma = sigma
