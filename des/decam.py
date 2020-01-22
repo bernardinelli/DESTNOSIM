@@ -174,7 +174,7 @@ class Survey:
 		Uses the CCD corners table to build a list of CCDs
 		'''
 		if self.corners == None:
-			raise ValueError("No table of CCD corners!")
+			raise ValueError("No table of CCD corners! Set Survey.corners first.")
 		else:
 			corners = tb.Table.read(self.corners)
 		try:

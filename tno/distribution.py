@@ -106,7 +106,7 @@ class Logarithm(Uniform):
 	def sample(self, n):
 		return np.exp(self._sampler.sample(n))
 
-class DoublePowerLaw(AnalyticDistribution):
+class BrokenPowerLaw(AnalyticDistribution):
 	def __init__(self, slope_1, slope_2, x_min, x_max, x_break, x_norm = None):
 		self.x_break = x_break
 		self.slope_1 = slope_1
@@ -119,6 +119,32 @@ class DoublePowerLaw(AnalyticDistribution):
 	
 		AnalyticDistribution.__init__(self, x_min, x_max, self.f)
 
+class DoublePowerLaw(AnalyticDistribution):
+	def __init__(self, slope_1, slope_2, x_min, x_max, x_eq, x_shift):
+		self.x_eq = x_eq
+		self.slope_1 = slope_1
+		self.slope_2 = slope_2
+		self.x_shift = x_shift
+		self.x_min = x_min
+		self.x_max = x_max
+		c = np.power(10, (slope_2 - slope_1)*(x_eq - x_shift))
+		self.c = c
+		self.f = lambda x : (1 + c)/(np.power(10, -slope_1 * (x - x_shift)) + c * np.power(10, -slope_2 * (x - x_shift)))
+
+
+		AnalyticDistribution.__init__(self, x_min, x_max, self.f)
+
+class RollingPowerLaw(AnalyticDistribution):
+	def __init__(self, slope, derivative, x_min, x_max, x_shift):
+		self.slope = slode
+		self.derivative = derivative
+		self.x_shift = x_shift
+		self.x_min = x_min
+		self.x_max = x_max
+		self.f = lambda x : np.power(10, slope * (x - x_shift) + derivative * (x - x_shift)**2 )
+		AnalyticDistribution.__init__(self, x_min, x_max, self.f)
+
+		
 class BrownDistribution(AnalyticDistribution):
 	def __init__(self, x_min, x_max, sigma):
 		self.sigma = sigma

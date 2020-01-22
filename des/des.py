@@ -169,19 +169,7 @@ class DES(Survey):
 		obs = tb.join(obs, mags)
 
 		del exp, mags
-		#obs.add_index('EXPNUM')
 
-		'''det = []
-		for i in np.unique(obs['EXPNUM']):
-			exp_obs = tb.Table(obs.loc[i])
-
-			try:
-				exp_obs['DETPROB'] = self[i].probDetection(exp_obs['MAG'])
-				det.append(exp_obs)
-			except:
-				pass
-
-		det = tb.vstack(det)'''
 
 		obs['DETPROB'] = obs['C']/(1. + np.exp(obs['K'] * (obs['MAG'] - obs['m_50'])))
 
