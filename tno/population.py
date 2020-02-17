@@ -6,6 +6,7 @@ import astropy.table as tb
 import pickle 
 import copy
 from transformation import * 
+import distribution as dd 
 
 def fibonacci_sphere(n_grid, angles = True):
 	'''
@@ -165,11 +166,6 @@ class Population:
 		ones['NDETECT'] = 1
 
 		stat = tb.vstack([stat, ones])
-
-
-		'''for i in np.arange(len(self))[np.isin(np.arange(len(selfn)),np.unique(self.detections['ORBITID']), invert = True)]:
-			stat.add_row([i, 0, 0, 0, 0])'''
-
 		stat.sort('ORBITID')
 
 		self.statistics = stat
@@ -270,7 +266,9 @@ class ElementPopulation(Population):
 		elif 'T_p' in self._keys:
 			self.elements[:,5] = self.input['T_p']
 		elif 'man' in self._keys:
-			self.elements[:,5] = self.epoch - self.input['man'] * np.power(self.input['a'], 3./2)
+			self.elements[:,5] = self.epoch - self.input['man'] * np.power(self.elements[:,0], 3./2)
+		elif 'M' in self._keys:
+			self.elements[:,5] = self.epoch - self.input['M'] * np.power(self.elements[:,0], 3./2)
 		else:
 			raise ValueError("Please provide either time of perihelion passage (top) or mean anomaly (man)/semi-major axis (a) as input")
 
@@ -389,9 +387,9 @@ class IsotropicPopulation(CartesianPopulation):
 		v_circ = np.sqrt(2*SolarSystemGM/self.r)
 		v_scale = distribution.sample(self.n_objects)
 
-		self.elements[:,3] = v_circ * v_scale
-		self.elements[:,4] = v_circ * v_scale
-		self.elements[:,5] = v_circ * v_scale
+		self.elements[:,3] *= v_circ * v_scale
+		self.elements[:,4] *= v_circ * v_scale
+		self.elements[:,5] *= v_circ * v_scale
 
 	def checkInFootprint(self, footprint = 'round17-poly.txt'):
 		'''
@@ -409,6 +407,67 @@ class IsotropicPopulation(CartesianPopulation):
 		self.n_grid = self.n_objects//2
 
 
+class LatIsotropic(ElementPopulation):
+	'''
+	Low inclination somewhat isotropic in ecliptic latitude Kuiper belt-like population
+	Used for fakes in Y6 processing
+	'''
+	def __init__(self, r_min, r_max, inc_min, inc_max, e_min, e_max, n_objects, epoch):
+		self.n_objects = n_objects
+		self.elements = np.zeros((n_objects, 6))
+
+		self.r_min = r_min 
+		self.r_max = r_max
+		dist = self._sampleDistance()
+		self.dist = dist
+
+		self.e_min = e_min
+		self.e_max = e_max
+		e = self._sampleEccentricity()
+
+		M = self._sampleAngle(True)
+		self.M = M
+		E = solve_anomaly(e, M)
+		
+		sinE = np.sin(E)
+		cosE = np.cos(E)
+		a = dist/np.sqrt(1 + e*e - e * (sinE**2) - 2 * e * cosE)
+
+		T_p = epoch + M * np.power(a, 3./2)/np.sqrt(SolarSystemGM)
+
+		Omega = self._sampleAngle()
+		omega = self._sampleAngle()
+
+		self.inc_min = inc_min
+		self.inc_max = inc_max
+		inc = self._sampleInclination()
+
+		self.elements[:,0] = a 
+		self.elements[:,1] = e 
+		self.elements[:,2] = inc 
+		self.elements[:,3] = Omega 
+		self.elements[:,4] = omega 
+		self.elements[:,5] = T_p
+
+
+	def _sampleInclination(self):
+		sin_dist = dd.SinusoidalDistribution(self.inc_min * np.pi/180, self.inc_max * np.pi/180)
+		return 180*sin_dist.sample(self.n_objects)/np.pi
+
+	def _sampleEccentricity(self):
+		ecc_dist = dd.Uniform(self.e_min, self.e_max)
+		return ecc_dist.sample(self.n_objects)
+
+	def _sampleDistance(self):
+		distance_dist = dd.Uniform(self.r_min, self.r_max)
+		return distance_dist.sample(self.n_objects)
+
+	def _sampleAngle(self, rad = False):
+		angle_dist = dd.Uniform(0, 1)
+		if rad:
+			return 2*np.pi*angle_dist.sample(self.n_objects) - np.pi
+		else:
+			return 360*angle_dist.sample(self.n_objects)
 
 
 

@@ -151,3 +151,17 @@ class BrownDistribution(AnalyticDistribution):
 		self.f = lambda x : np.sin(x * np.pi/180) * np.exp(- (x/sigma)**2/2.)
 		AnalyticDistribution.__init__(self, x_min, x_max, self.f)
 
+class SinusoidalDistribution(AnalyticDistribution):
+	def __init__(self, x_min, x_max):
+		self.f = lambda x : np.sin(x * np.pi/180)
+		AnalyticDistribution.__init__(self, x_min, x_max, self.f)
+
+class FunctionalUniform(Uniform):
+	def __init__(self, x_min, x_max, function):
+		self.f = function
+		self.uniform = Uniform(x_min, x_max)
+		Uniform.__init__(self, x_min, x_max)
+
+	def sample(self, n):
+		s = self.uniform.sample(n)
+		return self.f(s)
