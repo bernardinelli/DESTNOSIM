@@ -92,6 +92,20 @@ class Population:
 		
 		self.mag_obs = tb.vstack(band_stack)
 
+	def generateLightCurve(self, lightcurve):
+		'''
+		Applies some sort of light curve to each detection. `lightcurve` can either be a single function in which you can call the lightcurve amplitude at a given observation time, 
+		or an array containing the lightcurve for each object and indexed by ORBITID.
+		'''
+
+		if len(lightcurve) > 0:
+			for i in range(self.n_objects):
+				self.obs[self.obs['ORBITID'] == i]['MAG'] += lightcurve[i](self.obs[self.obs['ORBITID'] == i]['MJD'])
+		else:
+			self.obs['MAG'] += lightcurve[self.obs['MJD']]
+
+
+
 	def createCopies(self, n_clones):
 		'''
 		Creates n_clones copies of each object, allowing for some posterior randomization
@@ -297,9 +311,6 @@ class ElementPopulation(Population):
 		else:
 			self.elements[:,5] = self.epoch - (np.random.rand(self.n_objects) * (max_angle - min_angle) - min_angle) * np.pi/180. * np.power(self.elements[:,0], 3./2)/np.sqrt(mu)
 
-	def randomizeInclination(self):
-		self.elements[:,2] = np.arccos(np.random.rand(self.n_objects)*2 - 1) * 180/np.pi
-
 	def transformElements(self, heliocentric = False, ecliptic = False):
 		'''
 		Transforms the population to a CartesianPopulation. Depends on being heliocentric or barycentric and ecliptic aligned or equatoriallly aligned
@@ -405,75 +416,5 @@ class IsotropicPopulation(CartesianPopulation):
 
 		self.n_objects = len(self.elements)
 		self.n_grid = self.n_objects//2
-
-
-class LatIsotropic(ElementPopulation):
-	'''
-	Low inclination somewhat isotropic in ecliptic latitude Kuiper belt-like population
-	Used for fakes in Y6 processing
-	'''
-	def __init__(self, r_min, r_max, inc_min, inc_max, e_min, e_max, n_objects, epoch):
-		self.n_objects = n_objects
-		self.elements = np.zeros((n_objects, 6))
-
-		self.r_min = r_min 
-		self.r_max = r_max
-		dist = self._sampleDistance()
-		self.dist = dist
-
-		self.e_min = e_min
-		self.e_max = e_max
-		e = self._sampleEccentricity()
-
-		M = self._sampleAngle(True)
-		self.M = M
-		E = solve_anomaly(e, M)
-		
-		sinE = np.sin(E)
-		cosE = np.cos(E)
-		a = dist/np.sqrt(1 + e*e - e * (sinE**2) - 2 * e * cosE)
-
-		T_p = epoch + M * np.power(a, 3./2)/np.sqrt(SolarSystemGM)
-
-		Omega = self._sampleAngle()
-		omega = self._sampleAngle()
-
-		self.inc_min = inc_min
-		self.inc_max = inc_max
-		inc = self._sampleInclination()
-
-		self.elements[:,0] = a 
-		self.elements[:,1] = e 
-		self.elements[:,2] = inc 
-		self.elements[:,3] = Omega 
-		self.elements[:,4] = omega 
-		self.elements[:,5] = T_p
-
-
-	def _sampleInclination(self):
-		sin_dist = dd.SinusoidalDistribution(self.inc_min * np.pi/180, self.inc_max * np.pi/180)
-		return 180*sin_dist.sample(self.n_objects)/np.pi
-
-	def _sampleEccentricity(self):
-		ecc_dist = dd.Uniform(self.e_min, self.e_max)
-		return ecc_dist.sample(self.n_objects)
-
-	def _sampleDistance(self):
-		distance_dist = dd.Uniform(self.r_min, self.r_max)
-		return distance_dist.sample(self.n_objects)
-
-	def _sampleAngle(self, rad = False):
-		angle_dist = dd.Uniform(0, 1)
-		if rad:
-			return 2*np.pi*angle_dist.sample(self.n_objects) - np.pi
-		else:
-			return 360*angle_dist.sample(self.n_objects)
-
-
-
-
-
-
-
 
 

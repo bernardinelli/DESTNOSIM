@@ -154,7 +154,7 @@ def solve_anomaly(e, M0):
 	sol = M0
 	delta = 0.0
 	ones = 1.0
-	for i in range(100):
+	for i in range(1000):
 		delta = (M0 - (sol - e * np.sin(sol)))/(ones - e*np.cos(sol))
 		sol += delta
 	return sol

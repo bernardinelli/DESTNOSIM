@@ -137,7 +137,7 @@ class DES(Survey):
 		for ra, dec, mjd, n, b, m50, c, k, cov in zip(self.ra, self.dec, self.mjd, self.expnum, self.band, self.m50, self.c, self.k, self.cov):
 			self.exposures[n] = DESExposure(n, ra, dec, mjd, b, m50, c, k, cov)
 
-	def observePopulation(self, population, keepall = True):
+	def observePopulation(self, population, lightcurve = None, keepall = True):
 		'''
 		Uses the population's magnitudes to check if a detection is observable given the exposure completeness
 		'''
@@ -157,6 +157,7 @@ class DES(Survey):
 		exp['m_50'] = self.m50
 		exp['C'] = self.c 
 		exp['K'] = self.k 
+		exp['MJD'] = self.mjd
 
 		#we don't need all exposures - should save memory
 		exp = exp[np.isin(exp['EXPNUM'], population.observations['EXPNUM'])]
@@ -168,18 +169,25 @@ class DES(Survey):
 		
 		obs = tb.join(obs, mags)
 
+		population.obs = obs
+
+		if lightcurve != None:
+			population.generateLightCurve(lightcurve)
+
 		del exp, mags
 
 
-		obs['DETPROB'] = obs['C']/(1. + np.exp(obs['K'] * (obs['MAG'] - obs['m_50'])))
+		population.obs['DETPROB'] = population.obs['C']/(1. + np.exp(population.obs['K'] * (population.obs['MAG'] - population.obs['m_50'])))
 
 
-		obs['RANDOM'] = np.random.rand(len(obs))
+		population.obs['RANDOM'] = np.random.rand(len(population.obs))
 
-		del obs['m_50', 'C', 'K']
+		del population.obs['m_50', 'C', 'K']
 
 		if not keepall:
-			obs = obs[obs['DETPROB'] > obs['RANDOM']]
+			obs = population.obs[population.obs['DETPROB'] > population.obs['RANDOM']]
+		else:
+			obs = population.obs
 
 		population.detections = obs
 

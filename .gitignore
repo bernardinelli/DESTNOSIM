@@ -15,3 +15,11 @@ scripts/
 *.plist
 *.pdf
 *.png
+Notebooks/.ipynb_checkpoints/ETNO plots-checkpoint.ipynb
+Notebooks/.ipynb_checkpoints/Selection functions-checkpoint.ipynb
+Notebooks/.ipynb_checkpoints/Untitled-checkpoint.ipynb
+Notebooks/ETNO plots.ipynb
+Notebooks/Selection functions.ipynb
+Notebooks/Untitled.ipynb
+tno/de421.bsp
+tno/Leap_Second.dat
