@@ -45,6 +45,15 @@ class AnalyticDistribution(BaseDistribution):
 		r = np.random.rand(n)
 		return self.invCDF(r)
 
+	def __add__(self, other):
+		x_min = np.max(self.x_min, other.x_min)
+		x_max = np.min(self.x_max, other.x_max)
+		f = lambda x : self.f(x) + other.f(x)
+		n_samp = np.max(self.n_samp, other.n_samp)
+		n_bins = np.max(self.n_bins, other.n_bins)
+
+		return AnalyticDistribution(x_min, x_max, f, n_samp, n_bins)
+		
 class DeltaFunction(BaseDistribution):
 	'''
 	Delta function centered at loc
@@ -97,7 +106,7 @@ class Uniform(PowerLaw):
 	def __init__(self, x_min, x_max):
 		PowerLaw.__init__(self, 0, x_min, x_max)
 
-class Logarithm(Uniform):
+class Logarithmic(Uniform):
 	def __init__(self, x_min, x_max):
 		self._sampler = Uniform(np.log(x_min), np.log(x_max))
 		self.x_min = x_min
@@ -158,7 +167,7 @@ class SinusoidalDistribution(AnalyticDistribution):
 
 class FunctionalUniform(Uniform):
 	def __init__(self, x_min, x_max, function):
-		self.f = function
+		self.f = function 
 		self.uniform = Uniform(x_min, x_max)
 		Uniform.__init__(self, x_min, x_max)
 

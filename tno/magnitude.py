@@ -52,30 +52,56 @@ def reddening_colors(slope, ref_band):
 	Passband centers from Burke et al 2018 AJ 155 41
 	'''
 
-	l_ref = ref_lambda[ref_band]
+	#l_ref = ref_lambda[ref_band]
 
-	reddened = lambda x: sun_spec(x) * np.power(1 - slope, -(x - l_ref)/100)
+	reddened = lambda x: sun_spec(x) * np.exp(slope*x/100)
 	flux = {}
 
 	for i in ['g', 'r', 'i', 'z', 'Y']:
-		spec = lambda x : reddened(x) * des_filters[i](x)/x
+		spec = lambda x : reddened(x) * des_filters[i](x)*x
 		flux[i] = simps(spec(des_filters['LAMBDA']), des_filters['LAMBDA'])
 
 	colors = {}
 	for i in ['g', 'r', 'i', 'z', 'Y']:
-		colors['{} - {}'.format(i, ref_band)] = -2.5 * np.log10(flux[i]/flux[ref_band])
+		colors['{} - {}'.format(ref_band, i)] = -2.5 * np.log10(flux[ref_band]/flux[i])
 
-	return colors
-
-
+	return colors, flux
 
 
+class BaseLightCurve:
+	'''
+	Base method for lightcurves, returning no shift 
+	'''
+	def __init__(self):
+		pass
+	def _sample(self, times):
+		return np.zeros_like(times)
+	def __call__(self, x):
+		return self._sample(x)
 
 
-class LightCurve:
-	pass
 	#def __call__()
 
-class RandomPhaseLightCurve(LightCurve):
-	pass
+class RandomPhaseLightCurve(BaseLightCurve):
+	'''
+	Returns a randomly sampled sinusoidal lightcurve with a given peak-to-peak amplitude
+	'''
+	def __init__(self, amplitude):
+		self.amplitude = amplitude
+
+	def _sample(self, times):
+		phases = np.random.sample(times.shape)*2 *np.pi 
+		return self.amplitude * np.sin(phases)/2
+
+class SinusoidalLightCurve(BaseLightCurve):
+	'''
+	Given a certain known lightcurve with a given amplitude, period and phase, returns each point of the lightcurve
+	'''
+	def __init__(self, amplitude, period, phase):
+		self.amplitude = amplitude
+		self.period = period
+		self.phase = phase
+
+	def _sample(self, times):
+		return self.amplitude * np.sin(2 * np.pi * times/self.period + self.phase)
 
