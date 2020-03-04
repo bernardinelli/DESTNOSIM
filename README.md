@@ -15,6 +15,6 @@ External:
 - `orbitspp` (https://github.com/gbernstein/orbitspp) and dependencies
 
 #### Installation
-Make sure your environment has a `ORBITSPP` variable pointing to the `bin` folder of your `orbitspp` installation. In order to use the `des`-specific functions, you'll need the correspondent exposure and ccd corner file, located in a folder defined by the `DESDATA` environment variable. You may need to compile the `tno/popstat` program for the numba libraries.
+Make sure your environment has a `ORBITSPP` variable pointing to the `bin` folder of your `orbitspp` installation. In order to use the `des`-specific functions, you'll need the correspondent exposure and ccd corner file, located in a folder defined by your `DESDATA` environment variable. The file `desdata.tar.gz` should be extracted inside the `DESDATA` folder and contains the required files. You may need to compile the `tno/popstat` program for the numba libraries.
 
 This is not yet a proper Python package, so you'll have to manually add the `des` and `tno` folders to your path.

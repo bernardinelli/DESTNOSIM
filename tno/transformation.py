@@ -159,6 +159,19 @@ def solve_anomaly(e, M0):
 		sol += delta
 	return sol
 
+def rotate_to_ecliptic(xv, inverse = False):
+	'''
+	Rotates a 6D element vector between the ecliptic and equatorial frames
+	'''
+	cosEcl = np.cos(EclipticInclination)
+	sinEcl = -np.sin(EclipticInclination)
+	if inverse:
+		sinEcl = - sinEcl
+	xv[:,1], xv[:,2] = cosEcl * xv[:,1] + sinEcl * xv[:,2], -sinEcl * xv[:,1] + cosEcl * xv[:,2]
+	xv[:,4], xv[:,5] = cosEcl * xv[:,4] + sinEcl * xv[:,5], -sinEcl * xv[:,4] + cosEcl * xv[:,5]
+
+	return xv
+
 
 def keplerian_to_cartesian(keplerian, epoch, helio = False, ecliptic = False):
 	'''
@@ -191,12 +204,10 @@ def keplerian_to_cartesian(keplerian, epoch, helio = False, ecliptic = False):
 	xv[:,3:] = v
 
 	if not ecliptic:
-		cosEcl = np.cos(EclipticInclination)
-		sinEcl = -np.sin(EclipticInclination)
-		xv[:,1], xv[:,2] = cosEcl * xv[:,1] + sinEcl * xv[:,2], -sinEcl * xv[:,1] + cosEcl * xv[:,2]
-		xv[:,4], xv[:,5] = cosEcl * xv[:,4] + sinEcl * xv[:,5], -sinEcl * xv[:,4] + cosEcl * xv[:,5]
-
+		xv = rotate_to_ecliptic(xv)
 	return xv
+
+
 
 def dist_to_point(elements, epoch, element_type, point, helio = False, ecliptic = False):
 	'''

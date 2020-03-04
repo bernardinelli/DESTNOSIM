@@ -8,6 +8,8 @@ import copy
 from transformation import * 
 import distribution as dd 
 
+orbdata = os.getenv('DESDATA')
+
 def fibonacci_sphere(n_grid, angles = True):
 	'''
 	Generates a 3d Fibonacci sphere shell (see, eg, Gonzalez, A. 2010, Mathematical Geosciences, 42, 49, doi: 10.1007/s11004-009-9257-x) 
@@ -325,7 +327,7 @@ class CartesianPopulation(Population):
 	'''
 	Input: a dictionary with (x,y,z,vx,vy,vz) entries 
 	'''
-	def __init__(self, elements, epoch):
+	def __init__(self, elements, epoch, ecliptic = False):
 		self.input = elements
 		n = len(elements[list(elements.keys())[0]])
 		Population.__init__(self, n, 'cartesian', epoch)
@@ -336,6 +338,8 @@ class CartesianPopulation(Population):
 		self.elements[:,4] = self.input['vy']
 		self.elements[:,5] = self.input['vz']
 
+		self.ecliptic = ecliptic
+
 	def transformElements(self, heliocentric = False, ecliptic = False):
 		'''
 		Transforms the population to a ElementPopulation. Depends on being heliocentric or barycentric and ecliptic aligned or equatoriallly aligned
@@ -344,21 +348,30 @@ class CartesianPopulation(Population):
 		aei_dict = {'a' : aei[:,0], 'e' : aei[:,1], 'i' : aei[:,2], 'Omega' : aei[:,3], 'omega' : aei[:,4], 'T_p' : aei[:,5]}
 		return ElementPopulation(aei_dict, self.epoch)
 
-
+	def rotateElements(self):
+		'''
+		Rotates between equatorial and ecliptic state vectors
+		'''
+		self.elements = rotate_to_ecliptic(self.elements, not self.ecliptic)
+		self.ecliptic = not self.ecliptic
 
 
 class IsotropicPopulation(CartesianPopulation):
 	'''
 	Generates two Fibonacci spheres (one for velocities and one for positions) so we can sample objects across all possible parameters
 	'''
-	def __init__(self, n_grid, epoch, drop_outside = True, footprint = 'round17-poly.txt'):
+	def __init__(self, n_grid, epoch, drop_outside = True, footprint = orbdata + '/round17-poly.txt', ecliptic = False):
 		### Warning: n_grid defines the _grid size_, which leads to 2n+1 objects
-		Population.__init__(self, 2*n_grid, 'cartesian', epoch)
+
+		Population.__init__(self, 2*n_grid, epoch, ecliptic)
 		self.n_grid = n_grid
 		self._generateShell()
 		if drop_outside:
 			self.checkInFootprint(footprint)
 		self._generateVelocityShell()
+
+		if ecliptic:
+			print("DESTracks requires equatorial state vectors! Remember to rotate first.")
 
 	def _generateShell(self):
 		'''
