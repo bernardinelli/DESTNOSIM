@@ -20,6 +20,12 @@ def generate_colors(gr):
 	gz = alpha_z*gr + beta_z
 	return gi , gz  
 
+def shot_noise(mag, band):
+	shot_noise_amp: {'g' : -10.237155096761413, 'r' : -10.306198159582513, 'i' : -10.182735894436972, 'z' : -10.015274570909892}
+
+	return np.power(10, shot_noise_amp[band] + 0.4*mag)
+
+
 class BaseLightCurve:
 	'''
 	Base method for lightcurves, returning no shift 

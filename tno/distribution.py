@@ -53,6 +53,20 @@ class AnalyticDistribution(BaseDistribution):
 		n_bins = np.max(self.n_bins, other.n_bins)
 
 		return AnalyticDistribution(x_min, x_max, f, n_samp, n_bins)
+
+class DistributionFromHistogram(AnalyticDistribution):
+	'''
+	Samples from a histogram
+	'''
+	def __init__(self, bins, pdf):
+		self.bins = bins
+		self.pdf = pdf 
+
+		self._constructSampler()
+
+	def _constructSampler(self):
+		self.invCDF = ins.inverse_cdf_histogram(self.bins, self.pdf)
+
 		
 class DeltaFunction(BaseDistribution):
 	'''

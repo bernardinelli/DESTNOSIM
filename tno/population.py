@@ -193,6 +193,10 @@ class Population:
 		self.elements[:,element] = distribution.sample(self.n_objects)
 
 
+	def removeMembers(self, indices):
+		self.elements = self.elements[indices]
+		self.n_objects = len(self.elements)
+
 	# Standard class methods
 	def __str__(self):
 		return "Population with {} objects. Elements are of type {}".format(self.n_objects, self.elementType)
@@ -220,6 +224,7 @@ class Population:
 
 	def __getitem__(self, index):
 		return self.elements[index,:]
+
 
 
 class ElementPopulation(Population):
@@ -360,10 +365,10 @@ class IsotropicPopulation(CartesianPopulation):
 	'''
 	Generates two Fibonacci spheres (one for velocities and one for positions) so we can sample objects across all possible parameters
 	'''
-	def __init__(self, n_grid, epoch, drop_outside = True, footprint = orbdata + '/round17-poly.txt', ecliptic = False):
+	def __init__(self, n_grid, epoch, drop_outside = True, ecliptic = False, footprint = orbdata + '/round17-poly.txt'):
 		### Warning: n_grid defines the _grid size_, which leads to 2n+1 objects
-
-		Population.__init__(self, 2*n_grid, epoch, ecliptic)
+		size = len(np.arange(-n_grid, n_grid, 1, dtype=float))
+		Population.__init__(self, size, epoch, ecliptic)
 		self.n_grid = n_grid
 		self._generateShell()
 		if drop_outside:
@@ -402,20 +407,21 @@ class IsotropicPopulation(CartesianPopulation):
 	def _generateVelocityShell(self):
 		vx, vy, vz = fibonacci_sphere(self.n_grid, False)
 		perm = np.random.permutation(self.n_objects)
-
 		self.elements[:,3] = vx[perm]
 		self.elements[:,4] = vy[perm]
 		self.elements[:,5] = vz[perm]
 
 	def generateVelocities(self, distribution):
-		v_circ = np.sqrt(2*SolarSystemGM/self.r)
+		v_escape = np.sqrt(2*SolarSystemGM/self.r)
 		v_scale = distribution.sample(self.n_objects)
 
-		self.elements[:,3] *= v_circ * v_scale
-		self.elements[:,4] *= v_circ * v_scale
-		self.elements[:,5] *= v_circ * v_scale
+		self.elements[:,3] *= v_escape * v_scale
+		self.elements[:,4] *= v_escape * v_scale
+		self.elements[:,5] *= v_escape * v_scale
 
-	def checkInFootprint(self, footprint = 'round17-poly.txt'):
+		self.v = v_escape * v_scale
+
+	def checkInFootprint(self, footprint = orbdata + '/round17-poly.txt'):
 		'''
 		Checks which objects are inside the footprint
 		'''
@@ -428,6 +434,6 @@ class IsotropicPopulation(CartesianPopulation):
 		self.elements = self.elements[inside]
 
 		self.n_objects = len(self.elements)
-		self.n_grid = self.n_objects//2
+		self.n_grid = np.ceil(self.n_objects/2)
 
 

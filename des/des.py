@@ -72,20 +72,20 @@ class DESExposure(DECamExposure):
 			d = {k:i[k] for k in i.keys()}
 			self.wcs_db[i['CCDNUM']] = WCS(header=d)
 
-	def samplePosError(self, shotnoisedist, n_samples):
+	def samplePosError(self, shotnoise, n_samples):
 		'''
-		Finds n_samples position errors given a shot noise distribution (derived from the distribution.py file) and the
+		Finds n_samples position errors given the shot noise for each value and the
 		atmospheric turbulence error matrix
 		'''
 
-		shot_err = shotnoisedist.sample(n_samples)
+		#shot_err = shotnoisedist.sample(n_samples)
 
 		atm_err = np.random.multivariate_normal(np.array([0,0]), self.cov, n_samples)
 
 		ones = np.zeros((n_samples, 2))
 
 		for i in range(n_samples):
-			ones[i] *= shot_err[i]
+			ones[i] *= shotnoise[i]
 
 		err = ones + atm_err
 
