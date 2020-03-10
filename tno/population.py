@@ -359,7 +359,7 @@ class CartesianPopulation(Population):
 		'''
 		self.elements = rotate_to_ecliptic(self.elements, not self.ecliptic)
 		self.ecliptic = not self.ecliptic
-
+	
 
 class IsotropicPopulation(CartesianPopulation):
 	'''
@@ -368,12 +368,14 @@ class IsotropicPopulation(CartesianPopulation):
 	def __init__(self, n_grid, epoch, drop_outside = True, ecliptic = False, footprint = orbdata + '/round17-poly.txt'):
 		### Warning: n_grid defines the _grid size_, which leads to 2n+1 objects
 		size = len(np.arange(-n_grid, n_grid, 1, dtype=float))
-		Population.__init__(self, size, epoch, ecliptic)
+		Population.__init__(self, size, 'cartesian', epoch)
 		self.n_grid = n_grid
 		self._generateShell()
 		if drop_outside:
 			self.checkInFootprint(footprint)
 		self._generateVelocityShell()
+		
+		self.ecliptic = ecliptic
 
 		if ecliptic:
 			print("DESTracks requires equatorial state vectors! Remember to rotate first.")
@@ -387,7 +389,7 @@ class IsotropicPopulation(CartesianPopulation):
 		self.elements[:,1] = y
 		self.elements[:,2] = z
 
-		self.ra = np.mod(ra, 360)
+		self.ra = np.mod(180*ra/np.pi, 360)
 		self.ra[self.ra>180] -= 360 
 
 		self.dec = 180*np.arcsin(sin_dec)/np.pi
@@ -432,7 +434,9 @@ class IsotropicPopulation(CartesianPopulation):
 		inside = path.contains_points(np.array([self.ra, self.dec]).T)
 
 		self.elements = self.elements[inside]
-
+		self.ra = self.ra[inside]
+		self.dec = self.dec[inside]
+		
 		self.n_objects = len(self.elements)
 		self.n_grid = np.ceil(self.n_objects/2)
 
