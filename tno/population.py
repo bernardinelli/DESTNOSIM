@@ -41,7 +41,7 @@ class Population:
 		else:
 			self.state = 'T'
 	
-	def generateMagnitudes(self, distribution, mag_type, band, colors = None, observer_pos = [1,0,0], helio = False, ecliptic = False):
+	def generateMagnitudes(self, distribution, mag_type, band, colors = None, observer_pos = [1,0,0], helio = False, ecliptic = False, bands = ['g', 'r', 'i', 'z', 'Y']):
 		'''
 		Depends on magnitude distributions from `distribution.py`. 
 		distribution can be a list/array of distributions, in which case the magnitude of object i will come from distribution[i] 
@@ -86,7 +86,7 @@ class Population:
 
 		band_stack = [] 
 
-		for i in ['g', 'r', 'i', 'z', 'Y']:
+		for i in bands:
 			band = mag_table['ORBITID', 'm_' + i]
 			band.rename_column('m_' + i, 'MAG')
 			band['BAND'] = i 
@@ -102,9 +102,9 @@ class Population:
 
 		if len(lightcurve) > 0:
 			for i in range(self.n_objects):
-				self.obs[self.obs['ORBITID'] == i]['MAG'] += lightcurve[i](self.obs[self.obs['ORBITID'] == i]['MJD'])
+				self.obs['MAG'][self.obs['ORBITID'] == i] = self.obs[self.obs['ORBITID'] == i]['MAG'] + lightcurve[i](self.obs[self.obs['ORBITID'] == i]['MJD'])
 		else:
-			self.obs['MAG'] += lightcurve[self.obs['MJD']]
+			self.obs['MAG'] = lightcurve(self.obs['MJD']) + self.obs['MAG']
 
 
 
@@ -148,7 +148,7 @@ class Population:
 		r = dist_to_point(self.elements, self.epoch, self.elementType, point, helio, ecliptic)
 		return r 
 
-	def computeStatistics(self):
+	def computeStatistics(self, thresh = 90.):
 		'''
 		Computes ARC, ARCCUT and NUNIQUE for each member of the population. Requires a preliminary survey.observePopulation call
 		'''
@@ -163,16 +163,18 @@ class Population:
 		#index the table to make things easier
 		self.detections.add_index('ORBITID')
 
-		stat = tb.Table(names=['ORBITID', 'ARC', 'ARCCUT', 'NUNIQUE', 'NDETECT'], dtype=['i8', 'f8', 'f8', 'i8', 'i8'])
+		stat = tb.Table(names=['ORBITID', 'ARC', 'ARCCUT', 'NUNIQUE', 'NDETECT', 'TRIPLET'], dtype=['i8', 'f8', 'f8', 'i8', 'i8', 'b1'])
 		ids, counts = np.unique(self.detections['ORBITID'], return_counts = True)
 
 		for i in ids[counts > 1]:
 			obj = self.detections.loc[i]
 			times = np.array(obj['TDB']) * 365.25
+			times.sort()
 			arc = np.max(times) - np.min(times)
 			arccut = popstat.compute_arccut(times)
 			nunique = popstat.compute_nunique(times)
-			stat.add_row([i, arc, arccut, nunique, len(times)])
+			trip = popstat.compute_triplet(times, thresh)
+			stat.add_row([i, arc, arccut, nunique, len(times), trip])
 
 		ones = tb.Table()
 		ones['ORBITID'] = ids[counts == 1]
@@ -180,11 +182,14 @@ class Population:
 		ones['ARCCUT'] = 0.
 		ones['NUNIQUE'] = 1
 		ones['NDETECT'] = 1
+		ones['TRIPLET'] = False
 
 		stat = tb.vstack([stat, ones])
 		stat.sort('ORBITID')
 
 		self.statistics = stat
+
+
 
 	def randomizeElement(self, element, distribution):
 		'''

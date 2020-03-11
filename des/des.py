@@ -105,7 +105,7 @@ class DES(Survey):
 
 		self.release = release
 		track ='{}/{}.exposure.positions.fits'.format(orbdata, self.release)
-		corners = '{}/{}.ccdcorners.fits.gz'.format(orbdata, self.release)
+		corners = '{}/{}.ccdcorners.fits'.format(orbdata, self.release)
 		
 		exp = tb.Table.read(track, 1)
 		try:
@@ -114,10 +114,10 @@ class DES(Survey):
 			Survey.__init__(self, exp['expnum'], exp['ra'], exp['dec'], exp['mjd_mid'], exp['filter'], track = track, corners = corners)
 		self.exp = exp
 
-		if 'M_50' in exp.keys():
-			self.m50 = exp['M_50']
-			self.c = exp['C']
-			self.k = exp['K']
+		if 'm50' in exp.keys():
+			self.m50 = exp['m50']
+			self.c = exp['c']
+			self.k = exp['k']
 		else:
 			self.m50 = len(exp) * [None]
 			self.c = len(exp) * [None]
