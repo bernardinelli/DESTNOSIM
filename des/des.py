@@ -12,7 +12,12 @@ class DESExposure(DECamExposure):
 		self.m50 = m50 
 		self.c = c
 		self.k = k
-		self.cov = cov
+		#cov is in mas^2
+		xx = cov[0]
+		yy = cov[1]
+		xy = cov[2]
+		self.cov = cov = np.array([[xx, xy], [xy, yy]]) * (1/3600000**2)
+		
 
 	def probDetection(self, m):
 		'''
@@ -82,14 +87,14 @@ class DESExposure(DECamExposure):
 
 		atm_err = np.random.multivariate_normal(np.array([0,0]), self.cov, n_samples)
 
-		ones = np.zeros((n_samples, 2))
+		gauss = np.random.normal(size=(n_samples, 2))
 
 		for i in range(n_samples):
-			ones[i] *= shotnoise[i]
+			gauss[i] *= shotnoise[i]
 
-		err = ones + atm_err
+		err = gauss + atm_err
 
-		err[:,1,1] *= np.cos(self.dec * np.pi/180)
+		err[:,0] *= np.cos(self.dec * np.pi/180)
 
 		return err
 
@@ -104,7 +109,7 @@ class DES(Survey):
 		orbdata = os.getenv('DESDATA')
 
 		self.release = release
-		track ='{}/{}.exposure.positions.fits'.format(orbdata, self.release)
+		track ='{}/{}.exposures.positions.fits'.format(orbdata, self.release)
 		corners = '{}/{}.ccdcorners.fits'.format(orbdata, self.release)
 		
 		exp = tb.Table.read(track, 1)
@@ -171,7 +176,7 @@ class DES(Survey):
 
 		population.obs = obs
 
-		if lightcurve != None:
+		if lightcurve is not None:
 			population.generateLightCurve(lightcurve)
 
 		del exp, mags
@@ -185,7 +190,9 @@ class DES(Survey):
 		del population.obs['m_50', 'C', 'K']
 
 		if not keepall:
+			ndet = population.obs[population.obs['DETPROB'] < population.obs['RANDOM']]
 			obs = population.obs[population.obs['DETPROB'] > population.obs['RANDOM']]
+			population.ndet = ndet
 		else:
 			obs = population.obs
 

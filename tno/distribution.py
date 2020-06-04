@@ -179,6 +179,12 @@ class SinusoidalDistribution(AnalyticDistribution):
 		self.f = lambda x : np.sin(x * np.pi/180)
 		AnalyticDistribution.__init__(self, x_min, x_max, self.f)
 
+class RayleighDistribution(AnalyticDistribution):
+	def __init__(self, x_min, x_max, sigma):
+		self.sigma = sigma
+		self.f = lambda x : (x /(sigma)**2)* np.exp(- (x/sigma)**2/2.)
+		AnalyticDistribution.__init__(self, x_min, x_max, self.f)
+
 class FunctionalUniform(Uniform):
 	def __init__(self, x_min, x_max, function):
 		self.f = function 

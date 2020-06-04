@@ -102,7 +102,8 @@ class Population:
 
 		if len(lightcurve) > 0:
 			for i in range(self.n_objects):
-				self.obs['MAG'][self.obs['ORBITID'] == i] = self.obs[self.obs['ORBITID'] == i]['MAG'] + lightcurve[i](self.obs[self.obs['ORBITID'] == i]['MJD'])
+				where = self.obs['ORBITID'] == i
+				self.obs['MAG'][where] = self.obs['MAG'][where] + lightcurve[i](self.obs[where]['MJD'])
 		else:
 			self.obs['MAG'] = lightcurve(self.obs['MJD']) + self.obs['MAG']
 
@@ -184,7 +185,16 @@ class Population:
 		ones['NDETECT'] = 1
 		ones['TRIPLET'] = False
 
-		stat = tb.vstack([stat, ones])
+		orbid = np.arange(len(self))
+		zeros = tb.Table()
+		zeros['ORBITID'] = orbid[np.isin(orbid, ids, invert = True)]
+		zeros['ARC'] = 0.
+		zeros['ARCCUT'] = 0.
+		zeros['NUNIQUE'] = 0
+		zeros['NDETECT'] = 0
+
+		zeros['TRIPLET'] = False
+		stat = tb.vstack([stat, ones, zeros])
 		stat.sort('ORBITID')
 
 		self.statistics = stat
