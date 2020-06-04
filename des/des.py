@@ -16,7 +16,7 @@ class DESExposure(DECamExposure):
 		xx = cov[0]
 		yy = cov[1]
 		xy = cov[2]
-		self.cov = cov = np.array([[xx, xy], [xy, yy]]) * (1/3600000**2)
+		self.cov = np.array([[xx, xy], [xy, yy]]) * (1/3600000**2)
 		
 
 	def probDetection(self, m):
