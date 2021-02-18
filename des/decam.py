@@ -116,7 +116,7 @@ class DECamExposure:
 
 class Survey:
 	'''
-	A survey is just a series of pointings. Ideally, we'd have one `exposure.positions.fits` file for DESTracks usage
+	A survey is just a series of exposures. Ideally, we'd have one `exposure.positions.fits` file for DESTracks usage
 	'''
 	def __init__(self, expnum, ra, dec, mjd, band, track = None, corners = None):
 		self.ra = ra 
@@ -136,11 +136,15 @@ class Survey:
 		for ra,dec,mjd,n,b in zip(self.ra, self.dec, self.mjd, self.expnum, self.band):
 			self.exposures[n] = DECamExposure(n, ra, dec, mjd, b)
 
-	def createObservations(self, population, outputfile):
+	def createObservations(self, population, outputfile, useold = False):
 		'''
 		Calls ORBITSPP/DESTracks to generate observations for the input population, saves them in the outputfile 
 		and returns this table
 		'''
+		if useold and os.path.exists(outputfile + '.fits'):
+			population.observations =  tb.Table.read(outputfile + '.fits')
+			return
+
 		orbitspp = os.getenv('ORBITSPP')
 		with open('{}.txt'.format(outputfile), 'w') as f:
 			for j,i in enumerate(population.elements):

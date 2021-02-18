@@ -84,10 +84,31 @@ def compute_triplet(times, thresh):
 	else:
 		return False
 
-def compute_triplet(times, thresh):
-	'''
-	Computes the shortest possible triplet
-	'''
+@cc.export('find_triplet_time', 'f8[:](f8[:])')
+@numba.jit(nopython=True)
+def find_triplet_time(times):
+	first_pair =  999.
+	second_pair = 999.
+	det = List()
+
+	det.append(times[0])
+
+	n = len(times)
+
+	for i in range(n-1):
+		if times[i + 1] - times[i] > 0.1:
+			det.append(times[i+1])
+	
+	n = len(det)
+	for i in range(1,n-1):
+		if det[i + 1] - det[i] < first_pair and det[i] - det[i-1] < second_pair:
+			first_pair = det[i + 1] - det[i]
+			second_pair = det[i] - det[i-1]
+
+	return np.array([first_pair, second_pair])
+
+'''def compute_triplet(times, thresh):
+	'	Computes the shortest possible triplet'
 	triplet = 0.0
 
 	n = len(times)
@@ -115,6 +136,6 @@ def compute_triplet(times, thresh):
 			triplet = True
 
 	return triplet
-
+'''
 if __name__ == "__main__":
     cc.compile()

@@ -63,7 +63,7 @@ def cartesian_to_keplerian(cartesian, epoch, helio = False, ecliptic = False):
 		helio (bool, default = False): Switches between barycentric and heliocentric elements (False is barycentric)
 		ecliptic (bool, default = False): Use true if input elements are equatorially-aligned (ICRS)
 	Returns:
-		aei (n x 6 array): array with (a,e,i,omega,Omega,T_p) elements
+		aei (n x 6 array): array with (a,e,i,Omega,omega,T_p) elements
 	'''
 	mu = SunGM if helio else SolarSystemGM
 

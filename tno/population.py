@@ -149,7 +149,7 @@ class Population:
 		r = dist_to_point(self.elements, self.epoch, self.elementType, point, helio, ecliptic)
 		return r 
 
-	def computeStatistics(self, thresh = 90.):
+	def computeStatistics(self, thresh = 90., pair_trip = False, transient_efficiency = 0.95529):
 		'''
 		Computes ARC, ARCCUT and NUNIQUE for each member of the population. Requires a preliminary survey.observePopulation call
 		'''
@@ -161,10 +161,15 @@ class Population:
 
 		#consider only detections inside a CCD
 		self.detections.remove_rows(np.where(self.detections['CCDNUM'] == 0))
+
+		#transient efficiency
+		self.detections['RANDOM'] = np.random.rand(len(self.detections))
+		self.detections.remove_rows(np.where(self.detections['RANDOM'] > transient_efficiency))
+
 		#index the table to make things easier
 		self.detections.add_index('ORBITID')
-
-		stat = tb.Table(names=['ORBITID', 'ARC', 'ARCCUT', 'NUNIQUE', 'NDETECT', 'TRIPLET'], dtype=['i8', 'f8', 'f8', 'i8', 'i8', 'b1'])
+		stat = tb.Table(names=['ORBITID', 'ARC', 'ARCCUT', 'NUNIQUE', 'NDETECT', 'TRIPLET', 'PAIR_1', 'PAIR_2'], dtype=['i8', 'f8', 'f8', 'i8', 'i8', 'b1', 'f8', 'f8'])
+		
 		ids, counts = np.unique(self.detections['ORBITID'], return_counts = True)
 
 		for i in ids[counts > 1]:
@@ -174,8 +179,12 @@ class Population:
 			arc = np.max(times) - np.min(times)
 			arccut = popstat.compute_arccut(times)
 			nunique = popstat.compute_nunique(times)
-			trip = popstat.compute_triplet(times, thresh)
-			stat.add_row([i, arc, arccut, nunique, len(times), trip])
+			pt = popstat.find_triplet_time(times)			
+			if pt[0] < thresh and pt[1] < thresh:
+				has_trip = True 
+			else:
+				has_trip = False
+			stat.add_row([i, arc, arccut, nunique, len(times), has_trip, pt[0], pt[1]])
 
 		ones = tb.Table()
 		ones['ORBITID'] = ids[counts == 1]
@@ -184,6 +193,8 @@ class Population:
 		ones['NUNIQUE'] = 1
 		ones['NDETECT'] = 1
 		ones['TRIPLET'] = False
+		ones['PAIR_1'] = 0
+		ones['PAIR_2'] = 0
 
 		orbid = np.arange(len(self))
 		zeros = tb.Table()
@@ -192,8 +203,10 @@ class Population:
 		zeros['ARCCUT'] = 0.
 		zeros['NUNIQUE'] = 0
 		zeros['NDETECT'] = 0
-
 		zeros['TRIPLET'] = False
+		zeros['PAIR_1'] = 0
+		zeros['PAIR_2'] = 0
+
 		stat = tb.vstack([stat, ones, zeros])
 		stat.sort('ORBITID')
 

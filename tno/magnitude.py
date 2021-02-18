@@ -4,7 +4,7 @@ Series of convenience functions for working with magnitudes
 import numpy as np 
 import astropy.table as tb 
 
-from scipy.integrate import trapz
+from scipy.optimize import minimize
 
 alpha_i  =  1.492983987794142 
 beta_i   = -0.12310383521046273 
@@ -21,9 +21,51 @@ def generate_colors(gr):
 	return gi , gz  
 
 def shot_noise(mag, band):
+	'''
+	Return mean shot noise error expected as a function of magnitude in a given band
+	'''
 	shot_noise_amp = {'g' : -10.237155096761413, 'r' : -10.306198159582513, 'i' : -10.182735894436972, 'z' : -10.015274570909892}
 
 	return np.power(10, shot_noise_amp[band] + 0.4*mag)/3600
+
+def detprob(m, params):
+    '''
+    logit function
+    params = (m0, k, c)
+    '''
+    m50, k, c = params
+    logit = c/(1+np.exp(k*(m-m50)))
+    return logit
+
+
+def minusLogP(params, mdet, mnon, res_collect):
+    '''
+    Takes logit parameters and list of detected and non-detected magnitudes. 
+    Returns negative log of pdf
+    '''
+
+    if params[2] > 1.:
+        # this ensures that c cannot continue to rise above 1 by referencing 
+        # the value of the previous trial in the optimizer
+        res_collect.append(res_collect[-1] + (params[2] - 1.)*1e5)
+        return res_collect[-1] + 1e3
+    elif params[2] <= 0.:
+        return res_collect[-1] + 1e3
+    else:
+        pdet = detprob(mdet,params)
+        pnon = detprob(mnon,params)    
+        result = np.sum(np.log(pdet))
+        result += np.sum(np.log(1-pnon))
+        return -result
+
+def find_m50(m_det, m_miss):
+	'''
+	Computes the (m50, k, c) logit fit
+	'''
+	results_collector = [0]
+	return minimize(minusLogP, (23, 5, 1), method='Powell', args=(m_det, m_miss, results_collector), tol=1e-3)
+
+
 
 
 class BaseLightCurve:
