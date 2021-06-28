@@ -142,7 +142,7 @@ class DES(Survey):
 		for ra, dec, mjd, n, b, m50, c, k, cov in zip(self.ra, self.dec, self.mjd, self.expnum, self.band, self.m50, self.c, self.k, self.cov):
 			self.exposures[n] = DESExposure(n, ra, dec, mjd, b, m50, c, k, cov)
 
-	def observePopulation(self, population, lightcurve = None, keepall = True):
+	def observePopulation(self, population, lightcurve = None, keepall = False):
 		'''
 		Uses the population's magnitudes to check if a detection is observable given the exposure completeness
 		'''

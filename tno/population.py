@@ -344,7 +344,7 @@ class ElementPopulation(Population):
 		if uniform:
 			self.elements[:,5] = self.epoch - (np.linspace(min_angle, max_angle, self.n_objects)*np.pi/180.) * np.power(self.elements[:,0], 3./2)/np.sqrt(mu)
 		else:
-			self.elements[:,5] = self.epoch - (np.random.rand(self.n_objects) * (max_angle - min_angle) - min_angle) * np.pi/180. * np.power(self.elements[:,0], 3./2)/np.sqrt(mu)
+			self.elements[:,5] = self.epoch - (np.random.rand(self.n_objects) * (max_angle - min_angle) + min_angle) * np.pi/180. * np.power(self.elements[:,0], 3./2)/np.sqrt(mu)
 
 	def transformElements(self, heliocentric = False, ecliptic = False):
 		'''
