@@ -12,6 +12,7 @@ alpha_z  =  1.65452092361025
 beta_z   = -0.13315208762781655
 
 
+
 def generate_colors(gr):
 	'''
 	Generates g - i and g - z colors from a nominal g - r colors, according to a linear fit 
@@ -64,6 +65,20 @@ def find_m50(m_det, m_miss):
 	'''
 	results_collector = [0]
 	return minimize(minusLogP, (23, 5, 1), method='Powell', args=(m_det, m_miss, results_collector), tol=1e-3)
+
+
+def magnitude_physical(albedo, diameter, band):
+	'''
+	Finds the absolute magnitude of an object given an albedo in a certain band and a diameter (in km)
+	Assumes phi(alpha) = 1
+	Solar AB magnitudes from Willmer 2018 ApJS 236 47 (https://iopscience.iop.org/article/10.3847/1538-4365/aabfdf)
+	'''
+
+	solar_m = {'g' : -26.52, 'r' : -26.96, 'i' : -27.05, 'z' : -27.07, 'Y' : -27.07}
+
+	log_term = albedo * diameter * diameter/9e16  
+
+	return solar_m[band] - 2.5*np.log10(log_term)
 
 
 

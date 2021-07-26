@@ -59,6 +59,7 @@ def compute_nunique(times):
 	return nunique
 
 @cc.export('compute_triplet', 'b1(f8[:], f8)')
+
 @numba.jit(nopython=True)
 def compute_triplet(times, thresh):
 	first_pair =  99.
@@ -85,6 +86,7 @@ def compute_triplet(times, thresh):
 		return False
 
 @cc.export('find_triplet_time', 'f8[:](f8[:])')
+
 @numba.jit(nopython=True)
 def find_triplet_time(times):
 	first_pair =  999.

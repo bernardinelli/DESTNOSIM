@@ -347,3 +347,18 @@ def helio_to_bary(elements, element_type, epoch, bary_coordinates, ecliptic = Fa
 
 	return new_elements
 
+def equatorial_to_galactic(vector):
+	coslOm =   np.cos(np.pi *  32.93192/180)
+	sinlOm =   np.sin(np.pi *  32.93192/180)
+	cosalphG = np.cos(np.pi *  192.85948/180)
+	sinalphG = np.sin(np.pi *  192.85948/180)
+	cosdeltG = np.cos(np.pi *  27.12825/180)
+	sindeltG = np.sin(np.pi *  27.12825/180)
+
+	R_eq_to_gl = np.array([[-coslOm * sinalphG + cosalphG * sindeltG * sinlOm, cosalphG*coslOm+sinalphG*sindeltG*sinlOm,- cosdeltG * sinlOm], 
+				[- cosalphG * coslOm * sindeltG - sinalphG * sinlOm, - coslOm * sinalphG * sindeltG + cosalphG*sinlOm,cosdeltG*coslOm], 
+				[cosalphG*cosdeltG, cosdeltG*sinalphG,sindeltG]])
+
+	return R_eq_to_gl.dot(vector)
+
+	
