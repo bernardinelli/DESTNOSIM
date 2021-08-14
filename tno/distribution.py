@@ -65,7 +65,7 @@ class DistributionFromHistogram(AnalyticDistribution):
 		self._constructSampler()
 
 	def _constructSampler(self):
-		self.invCDF = ins.inverse_cdf_histogram(self.bins, self.pdf)
+		self.invCDF = ins.inverse_cdf_histogram(bin_edges = self.bins, hist = self.pdf)
 
 		
 class DeltaFunction(BaseDistribution):

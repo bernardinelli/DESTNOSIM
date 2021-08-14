@@ -81,6 +81,19 @@ def magnitude_physical(albedo, diameter, band):
 	return solar_m[band] - 2.5*np.log10(log_term)
 
 
+def size_from_mag(albedo, magnitude, band):
+	'''
+	Finds the diameter (in km) of an object given an albedo in a certain band and an absolute magnitude 
+	Assumes phi(alpha) = 10
+	Solar AB magnitudes from Willmer 2018 ApJS 236 47 (https://iopscience.iop.org/article/10.3847/1538-4365/aabfdf)
+	'''
+
+	solar_m = {'g' : -26.52, 'r' : -26.96, 'i' : -27.05, 'z' : -27.07, 'Y' : -27.07}
+
+	power = np.power(10, 0.4*(solar_m[band] - magnitude))  
+
+	return np.sqrt(9e16 * power/albedo)
+
 
 
 class BaseLightCurve:

@@ -218,7 +218,7 @@ def rotate_to_ecliptic(xv, inverse = False):
 	return xv
 
 
-def keplerian_to_cartesian(keplerian, epoch, helio = False, ecliptic = False):
+def keplerian_to_cartesian(keplerian, epoch, helio = False, ecliptic = True):
 	'''
 	Goes from Keplerian elements to ecliptic or equatorial state vectors
 	See chapter 1 of Modern Celestial Mechanics - Morbidelli for example
@@ -237,7 +237,7 @@ def keplerian_to_cartesian(keplerian, epoch, helio = False, ecliptic = False):
 	M0 = np.array((epoch - keplerian[:,5])*(np.sqrt(mu)/np.power(keplerian[:,0],3./2)))
 	#print(M0)
 
-
+ 
 	E = solve_anomaly(np.array(keplerian[:,1]), M0)
 	#return M0, E, keplerian[:,1]
 
@@ -348,6 +348,10 @@ def helio_to_bary(elements, element_type, epoch, bary_coordinates, ecliptic = Fa
 	return new_elements
 
 def equatorial_to_galactic(vector):
+	'''
+	Transforms a 3d vector from equatorial coordinates to Galactic coordinates, following the transformations outlined in van Altena (2013)
+
+	'''
 	coslOm =   np.cos(np.pi *  32.93192/180)
 	sinlOm =   np.sin(np.pi *  32.93192/180)
 	cosalphG = np.cos(np.pi *  192.85948/180)
@@ -361,4 +365,19 @@ def equatorial_to_galactic(vector):
 
 	return R_eq_to_gl.dot(vector)
 
-	
+
+
+def invariable_to_ecliptic(vector):
+	'''
+	Transforms a 3d vector from invariable plane coordinates to ecliptic coordinates, following Souami & Souchay (2012)
+	'''
+
+	cosphi = np.cos(1.587 * np.pi/180)
+	sinphi = np.sin(1.587 * np.pi/180)
+	cosLan = np.cos(107.6 * np.pi/180)
+	sinLan = np.sin(107.6 * np.pi/180)
+
+	R_inv_to_ecl = np.array([[cosLan, -cosphi * sinLan, sinphi], [sinLan,cosphi*cosLan,-cosLan*sinphi],[0,sinphi,cosphi]])
+
+
+	return np.einsum('ij,...j', R_inv_to_ecl, vector)
