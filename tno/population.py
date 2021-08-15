@@ -316,7 +316,7 @@ class ElementPopulation(Population):
 		elif 'T_p' in self._keys:
 			self.elements[:,5] = self.input['T_p']
 		elif 'man' in self._keys:
-			self.elements[:,5] = self.epoch - self.input['man'] * np.power(self.elements[:,0], 3./2) * np.pi/180 
+			self.elements[:,5] = self.epoch - self.input['man'] * np.power(self.elements[:,0], 3./2) * np.pi/180 / mu
 		elif 'M' in self._keys:
 			self.elements[:,5] = self.epoch - self.input['M'] * np.power(self.elements[:,0], 3./2) * np.pi/180 / mu
 		else:
