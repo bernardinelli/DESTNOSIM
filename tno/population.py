@@ -268,7 +268,8 @@ class ElementPopulation(Population):
 		Population.__init__(self, n, 'keplerian', epoch)
 		self._organizeElements()
 
-	def _organizeElements(self):
+	def _organizeElements(self, heliocentric = False):
+		mu = SunGM if heliocentric else SolarSystemGM
 		if 'a' in self._keys:
 			self.elements[:,0] = self.input['a']
 		elif 'q' in self._keys and 'e' in self._keys:
@@ -317,7 +318,7 @@ class ElementPopulation(Population):
 		elif 'man' in self._keys:
 			self.elements[:,5] = self.epoch - self.input['man'] * np.power(self.elements[:,0], 3./2) * np.pi/180 
 		elif 'M' in self._keys:
-			self.elements[:,5] = self.epoch - self.input['M'] * np.power(self.elements[:,0], 3./2) * np.pi/180
+			self.elements[:,5] = self.epoch - self.input['M'] * np.power(self.elements[:,0], 3./2) * np.pi/180 / mu
 		else:
 			raise ValueError("Please provide either time of perihelion passage (top) or mean anomaly (man)/semi-major axis (a) as input")
 
