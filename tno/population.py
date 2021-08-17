@@ -316,9 +316,9 @@ class ElementPopulation(Population):
 		elif 'T_p' in self._keys:
 			self.elements[:,5] = self.input['T_p']
 		elif 'man' in self._keys:
-			self.elements[:,5] = self.epoch - self.input['man'] * np.power(self.elements[:,0], 3./2) * np.pi/180 / mu
+			self.elements[:,5] = self.epoch - self.input['man'] * np.power(self.elements[:,0], 3./2) * (np.pi/180) / np.sqrt(mu)
 		elif 'M' in self._keys:
-			self.elements[:,5] = self.epoch - self.input['M'] * np.power(self.elements[:,0], 3./2) * np.pi/180 / mu
+			self.elements[:,5] = self.epoch - self.input['M'] * np.power(self.elements[:,0], 3./2) * (np.pi/180) / np.sqrt(mu)
 		else:
 			raise ValueError("Please provide either time of perihelion passage (top) or mean anomaly (man)/semi-major axis (a) as input")
 
