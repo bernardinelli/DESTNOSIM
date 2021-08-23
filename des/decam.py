@@ -143,7 +143,10 @@ class Survey:
 		'''
 		if useold and os.path.exists(outputfile + '.fits'):
 			population.observations =  tb.Table.read(outputfile + '.fits')
-			return
+			return None
+
+		if population.heliocentric:
+			raise ValueError("Please use barycentric elements!")
 
 		orbitspp = os.getenv('ORBITSPP')
 		with open('{}.txt'.format(outputfile), 'w') as f:

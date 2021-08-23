@@ -40,6 +40,7 @@ class Population:
 			self.state = 'F'
 		else:
 			self.state = 'T'
+		self.heliocentric = False
 	
 	def generateMagnitudes(self, distribution, mag_type, band, colors = None, observer_pos = [1,0,0], helio = False, ecliptic = False, bands = ['g', 'r', 'i', 'z', 'Y']):
 		'''
@@ -106,8 +107,6 @@ class Population:
 				self.obs['MAG'][where] = self.obs['MAG'][where] + lightcurve[i](self.obs[where]['MJD'])
 		else:
 			self.obs['MAG'] = lightcurve(self.obs['MJD']) + self.obs['MAG']
-
-
 
 	def createCopies(self, n_clones):
 		'''
@@ -261,15 +260,16 @@ class ElementPopulation(Population):
 	Units should be AU, degrees and years after J2000
 	Input should be a dictionary of arrays with the proper orbital elements
 	'''
-	def __init__(self, elements, epoch):
+	def __init__(self, elements, epoch, heliocentric = False):
 		self.input = elements
 		self._keys = elements.keys()
 		n = len(elements[list(elements.keys())[0]])
 		Population.__init__(self, n, 'keplerian', epoch)
 		self._organizeElements()
+		self.heliocentric = heliocentric
 
-	def _organizeElements(self, heliocentric = False):
-		mu = SunGM if heliocentric else SolarSystemGM
+	def _organizeElements(self):
+		mu = SunGM if self.heliocentric else SolarSystemGM
 		if 'a' in self._keys:
 			self.elements[:,0] = self.input['a']
 		elif 'q' in self._keys and 'e' in self._keys:
@@ -354,14 +354,22 @@ class ElementPopulation(Population):
 		xv = keplerian_to_cartesian(self.elements, self.epoch, heliocentric, ecliptic)
 		xv_dict = {'x' : xv[:,0], 'y' : xv[:,1], 'z' : xv[:,2], 'vx' : xv[:,3], 'vy' : xv[:,4], 'vz' : xv[:,5]}
 		return CartesianPopulation(xv_dict, self.epoch)
-	
+
+	def toBarycentric(self, barycentric_coordinates):
+		if not self.heliocentric:
+			raise ValueError("Population is already in barycentric elements")
+		else:
+			new_aei = tt.helio_to_bary(self.elements, "keplerian", self.epoch, barycentric_coordinates)
+			return ElementPopulation(new_aei, self.epoch, False)
+
+
 
 
 class CartesianPopulation(Population):
 	'''
 	Input: a dictionary with (x,y,z,vx,vy,vz) entries 
 	'''
-	def __init__(self, elements, epoch, ecliptic = False):
+	def __init__(self, elements, epoch, ecliptic = False, heliocentric = False):
 		self.input = elements
 		n = len(elements[list(elements.keys())[0]])
 		Population.__init__(self, n, 'cartesian', epoch)
@@ -373,6 +381,7 @@ class CartesianPopulation(Population):
 		self.elements[:,5] = self.input['vz']
 
 		self.ecliptic = ecliptic
+		self.heliocentric = heliocentric
 
 	def transformElements(self, heliocentric = False, ecliptic = False):
 		'''
