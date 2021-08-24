@@ -355,12 +355,18 @@ class ElementPopulation(Population):
 		xv_dict = {'x' : xv[:,0], 'y' : xv[:,1], 'z' : xv[:,2], 'vx' : xv[:,3], 'vy' : xv[:,4], 'vz' : xv[:,5]}
 		return CartesianPopulation(xv_dict, self.epoch)
 
-	def toBarycentric(self, barycentric_coordinates):
+	def toBarycentric(self, barycenter_coordinates):
+		'''
+		Transforms a set of heliocentric orbital elements to barycentric orbital elements
+		Requires a 6D barycenter state vector (AU, AU/yr)
+		'''
 		if not self.heliocentric:
 			raise ValueError("Population is already in barycentric elements")
 		else:
-			new_aei = tt.helio_to_bary(self.elements, "keplerian", self.epoch, barycentric_coordinates)
-			return ElementPopulation(new_aei, self.epoch, False)
+			new_aei = helio_to_bary(self.elements, "keplerian", self.epoch, barycenter_coordinates)
+			aei_dict = {'a' : new_aei[:,0], 'e' : new_aei[:,1], 'i' : new_aei[:,2], 'lan' : new_aei[:,3]
+						'aop' : new_aei[:,4], 'T_p' : new_aei[:,5]}
+			return ElementPopulation(aei_dict, self.epoch, False)
 
 
 
