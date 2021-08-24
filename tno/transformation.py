@@ -363,12 +363,11 @@ def equatorial_to_galactic(vector):
 				[- cosalphG * coslOm * sindeltG - sinalphG * sinlOm, - coslOm * sinalphG * sindeltG + cosalphG*sinlOm,cosdeltG*coslOm], 
 				[cosalphG*cosdeltG, cosdeltG*sinalphG,sindeltG]])
 
-	return R_eq_to_gl.dot(vector)
+	return np.einsum('ij,...j',R_eq_to_gl,vector)
 
 def galactic_to_equatorial(vector):
 	'''
 	Transforms a 3d vector from Galactic coordinates to equatorial coordinates, following the transformations outlined in van Altena (2013)
-
 	'''
 	coslOm =   np.cos(np.pi *  32.93192/180)
 	sinlOm =   np.sin(np.pi *  32.93192/180)
@@ -381,7 +380,7 @@ def galactic_to_equatorial(vector):
 				[- cosalphG * coslOm * sindeltG - sinalphG * sinlOm, - coslOm * sinalphG * sindeltG + cosalphG*sinlOm,cosdeltG*coslOm], 
 				[cosalphG*cosdeltG, cosdeltG*sinalphG,sindeltG]]))
 
-	return R_gl_to_eq.dot(vector)
+	return np.einsum('ij,...j',R_gl_to_eq,vector)
 
 
 
