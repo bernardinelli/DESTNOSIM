@@ -1,7 +1,7 @@
 from __future__ import print_function
 import numpy as np
 from itertools import chain
-import ccd
+from .ccd import *
 import os 
 import subprocess
 import astropy.table as tb 
@@ -96,7 +96,7 @@ class DECamExposure:
 		- List of CCDs in which each point belongs to
 		'''
 		if ccd_tree == None:
-			ccd_tree, ccd_keys = ccd.create_ccdtree()
+			ccd_tree, ccd_keys = create_ccdtree()
 
 		x, y = self.gnomonicProjection(ra_list, dec_list)
 
@@ -108,7 +108,7 @@ class DECamExposure:
 			inside_CCD = ccd_tree.query_ball_tree(tree, ccdsize, p = np.inf)
 			#this is probably the most complicated Python line ever written
 			if inside_CCD != None: 
-				ccd_id = [len(inside_CCD[i])*[ccd.ccdnums[ccd_keys[i]]] for i in range(len(inside_CCD)) if len(inside_CCD[i]) > 0]
+				ccd_id = [len(inside_CCD[i])*[ccdnums[ccd_keys[i]]] for i in range(len(inside_CCD)) if len(inside_CCD[i]) > 0]
 				inside_CCD = np.array(list(chain(*inside_CCD)))
 				if len(inside_CCD) > 0:
 					return index[inside_CCD], list(chain(*ccd_id))

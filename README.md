@@ -13,17 +13,21 @@ Python:
 - `astropy`
 - `scipy`
 - `numba` 
-- Optional: `pixmappy` (https://github.com/gbernstein/pixmappy)
+- Optional: `pixmappy` (https://github.com/gbernstein/pixmappy). This is only required if you wish to access some of the WCS functionalities of this package. If all you intend to do with this package is TNO simulations, you don't need `pixmappy`.
 
 External:
 - `orbitspp` (https://github.com/gbernstein/orbitspp) and dependencies
 
 #### Installation
-Make sure your environment has a `ORBITSPP` variable pointing to the `bin` folder of your `orbitspp` installation. In order to use the `des`-specific functions, you'll need the correspondent exposure and ccd corner file, located in a folder defined by your `DESDATA` environment variable. The file `desdata.tar.gz` should be extracted inside the `DESDATA` folder and contains the required files. You may need to compile the `tno/popstat` program for the `numba` libraries.
+The `orbitspp` installation is detailed in that package's page. It can be a bit tricky, and requires many different pieces to be put together. 
 
-Feel free to contact the author if you run into problems installing this package, or `orbitspp`.
+The Python package can be installed in a standard way: 
+```
+    python3 setup.py install
+```
 
-This is not yet a proper Python package, so you'll have to manually add the `des` and `tno` folders to your path.
+Make sure your environment has a `ORBITSPP` variable pointing to the `bin` folder of your `orbitspp` installation. In order to use the `des`-specific functions, you'll need the correspondent exposure and ccd corner files, located in a folder defined by your `DESDATA` environment variable. The file `desdata.tar.gz` should be extracted inside the `DESDATA` folder and contains the required files. You may need to compile the `tno/popstat` program for the `numba` libraries.
+
 
 ### Usage
-A simple tutorial for the software included here is included [here] (Notebooks/DESTNOSIM Tutorial.ipynb). This tutorial projects the almost 70 thousand synthethic objects from the CFEPS-L7 model into the DES exposures and evaluates the detectability of all objects. For more advanced usage, the user is encouraged to delve into the files and the documentation. 
+A simple tutorial for the software included here is included [here](Examples/DESTNOSIM Tutorial.ipynb). This tutorial projects the almost 70 thousand synthethic objects from the CFEPS-L7 model into the DES exposures and evaluates the detectability of all objects. For more advanced usage, the user is encouraged to delve into the files and the documentation. 

@@ -23,3 +23,6 @@ Notebooks/Selection functions.ipynb
 Notebooks/Untitled.ipynb
 tno/de421.bsp
 tno/Leap_Second.dat
+build/
+Examples/.ipynb_checkpoints/
+dist/

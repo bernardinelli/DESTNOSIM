@@ -1,4 +1,4 @@
-from decam import *
+from .decam import *
 import os 
 import astropy.table as tb
 from astropy.wcs import WCS

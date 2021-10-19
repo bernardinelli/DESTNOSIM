@@ -5,10 +5,14 @@ import subprocess
 import astropy.table as tb 
 import pickle 
 import copy
-from transformation import * 
-import distribution as dd 
+from .transformation import * 
+from .distribution import * 
+from .popstat import *
 
 orbdata = os.getenv('DESDATA')
+if orbdata is None:
+	orbdata = ''
+
 
 def fibonacci_sphere(n_grid, angles = True):
 	'''
@@ -191,7 +195,6 @@ class Population:
 		- thresh: threshold for triplet generation (in days). Use 60 for d < 50 au
 		- transient_efficiency: efficiency of the transient generation process. Keeps transient_efficiency*100% of the transients in the catalog
 		'''
-		import popstat
 		try:
 			self.detections
 		except:
@@ -215,9 +218,9 @@ class Population:
 			times = np.array(obj['TDB']) * 365.25
 			times.sort()
 			arc = np.max(times) - np.min(times)
-			arccut = popstat.compute_arccut(times)
-			nunique = popstat.compute_nunique(times)
-			pt = popstat.find_triplet_time(times)			
+			arccut = compute_arccut(times)
+			nunique = compute_nunique(times)
+			pt = find_triplet_time(times)			
 			if pt[0] < thresh and pt[1] < thresh:
 				has_trip = True 
 			else:

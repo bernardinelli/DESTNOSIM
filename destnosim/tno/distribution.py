@@ -7,7 +7,7 @@ where 0 <= alpha <= 1 and p_1, p_2 are two distributions
 
 '''
 import numpy as np
-import inv_sample as ins
+from .inv_sample import *
 
 class BaseDistribution:
 	'''
@@ -58,7 +58,7 @@ class AnalyticDistribution(BaseDistribution):
 	def _constructSampler(self):
 		x = np.linspace(self.x_min, self.x_max, self.n_samp)
 		y = self.f(x)
-		self.invCDF = ins.inverse_cdf(x, y, self.n_bins)
+		self.invCDF = inverse_cdf(x, y, self.n_bins)
 
 	def sample(self, n):
 		'''
@@ -97,7 +97,7 @@ class DistributionFromHistogram(AnalyticDistribution):
 		self._constructSampler()
 
 	def _constructSampler(self):
-		self.invCDF = ins.inverse_cdf_histogram(bin_edges = self.bins, hist = self.pdf)
+		self.invCDF = inverse_cdf_histogram(bin_edges = self.bins, hist = self.pdf)
 
 		
 class DeltaFunction(BaseDistribution):

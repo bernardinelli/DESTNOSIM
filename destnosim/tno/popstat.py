@@ -1,16 +1,14 @@
 import numpy as np 
 import numba
 
-from numba.pycc import CC
 from numba.typed import List
 
-cc = CC('popstat')
 # Uncomment the following line to print out the compilation steps
 #cc.verbose = True
 
-@cc.export('compute_arccut', 'f8(f8[:])')
+#@cc.export('compute_arccut', 'f8(f8[:])')
 
-@numba.jit(nopython=True)
+@numba.jit('f8(f8[:])', nopython=True,)
 def compute_arccut(times):
 	'''
 	Computes ARCCUT, the time between the first and last detection dropping one night of detection
@@ -35,9 +33,9 @@ def compute_arccut(times):
 
 	return arccut
 
-@cc.export('compute_nunique', 'i8(f8[:])')
+#@cc.export('compute_nunique', 'i8(f8[:])')
 
-@numba.jit(nopython=True)
+@numba.jit('i8(f8[:])',nopython=True,)
 def compute_nunique(times):
 	'''
 	Computes NUNIQUE, the number of unique nights in which we have observations from an object
@@ -61,9 +59,9 @@ def compute_nunique(times):
 
 	return nunique
 
-@cc.export('compute_triplet', 'b1(f8[:], f8)')
+#@cc.export('compute_triplet', 'b1(f8[:], f8)')
 
-@numba.jit(nopython=True)
+@numba.jit('b1(f8[:], f8)',nopython=True,)
 def compute_triplet(times, thresh):
 	'''
 	Computes the time difference between triplets, returns if a triplet is formed
@@ -95,9 +93,9 @@ def compute_triplet(times, thresh):
 	else:
 		return False
 
-@cc.export('find_triplet_time', 'f8[:](f8[:])')
+#@cc.export('find_triplet_time', 'f8[:](f8[:])')
 
-@numba.jit(nopython=True)
+@numba.jit('f8[:](f8[:])',nopython=True,)
 def find_triplet_time(times):
 	'''
 	Computes the minimum triplet time for both pairs of an object
@@ -126,35 +124,3 @@ def find_triplet_time(times):
 
 	return np.array([first_pair, second_pair])
 
-'''def compute_triplet(times, thresh):
-	'	Computes the shortest possible triplet'
-	triplet = 0.0
-
-	n = len(times)
-
-	triplet = False
-	det1 = times[0] 
-	det2 = times[0]
-	det3 = times[0]
-
-	for i in range(n):
-		det1 = times[i]
-		det2 = times[i]
-		det3 = times[i]
-		#unique = True
-
-		for j in range(i, n):
-			if abs(times[j] - times[i]) > 0.1:
-				det2 = times[j]
-				for k in range(j, n):
-					if abs(times[k] - times[j]) > 0.1:
-						det3 = times[k]
-
-		if det2 - det1 < thresh and det3 - det2 < thresh:	
-			print(det1, det2, det3)
-			triplet = True
-
-	return triplet
-'''
-if __name__ == "__main__":
-    cc.compile()
