@@ -26,7 +26,7 @@ The Python package can be installed in a standard way:
     python3 setup.py install
 ```
 
-Make sure your environment has a `ORBITSPP` variable pointing to the `bin` folder of your `orbitspp` installation. In order to use the `des`-specific functions, you'll need the correspondent exposure and ccd corner files, located in a folder defined by your `DESDATA` environment variable. The file `desdata.tar.gz` should be extracted inside the `DESDATA` folder and contains the required files. You may need to compile the `tno/popstat` program for the `numba` libraries.
+Make sure your environment has a `ORBITSPP` variable pointing to the `bin` folder of your `orbitspp` installation. In order to use the `des`-specific functions, you'll need the correspondent exposure and ccd corner files, located in a folder defined by your `DESDATA` environment variable. The data folder is what should be inside your `DESDATA` folder and contains the required files.
 
 
 ### Usage
