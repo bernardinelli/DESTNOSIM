@@ -192,7 +192,7 @@ class Survey:
 		for ra,dec,mjd,n,b in zip(self.ra, self.dec, self.mjd, self.expnum, self.band):
 			self.exposures[n] = DECamExposure(n, ra, dec, mjd, b)
 
-	def createObservations(self, population, outputfile, useold = False):
+	def createObservations(self, population, outputfile, useold = False, ra0 = 10, dec0 = -20, radius = 85):
 		'''
 		Calls $ORBITSPP/DESTracks to generate observations for the input population, saves them in the outputfile 
 		and returns this table
@@ -201,6 +201,11 @@ class Survey:
 		- population: Population object from tno/population containing the input orbits
 		- outputfile: Path for the output FITS file where the observations will be saved, .fits extension will be appended
 		- useold: boolean, if True will check if outputfile already exists and read it, skipping the DESTracks call
+		- ra0: R.A. center of the observation field
+		- dec0: Dec center of the observation
+		- radius: search radius for the exposures
+		
+		For DES usage, the last three parameters should remain constant!
 
 		Results are stored in population.observations
 		'''
@@ -220,11 +225,13 @@ class Survey:
 
 			print(' '.join([orbitspp + '/DESTracks', '-cornerFile={}'.format(self.corners), 
 							'-exposureFile={}'.format(self.track), '-tdb0={}'.format(population.epoch), '-positionFile={}.fits'.format(outputfile)
-							,'-readState={}'.format(population.state) ,'< {}.txt'.format(outputfile)]))
+							,'-readState={}'.format(population.state) , '-ra0={}'.format(ra0), 
+							'-dec0={}'.format(dec0),'-radius={}'.format(radius), '< {}.txt'.format(outputfile)]))
 
 			subprocess.call([orbitspp + '/DESTracks', '-cornerFile={}'.format(self.corners), 
 							'-exposureFile={}'.format(self.track), '-tdb0={}'.format(population.epoch), '-positionFile={}.fits'.format(outputfile)
-							,'-readState={}'.format(population.state)], stdin = f)
+							,'-readState={}'.format(population.state) , '-ra0={}'.format(ra0), 
+							'-dec0={}'.format(dec0),'-radius={}'.format(radius), '< {}.txt'.format(outputfile)], stdin = f)
 
 		if not os.path.exists(outputfile + '.fits'):
 			raise ValueError("$ORBITSPP call did not terminate succesfully!")
