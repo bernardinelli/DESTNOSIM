@@ -167,7 +167,7 @@ class DES(Survey):
 
 		self.release = release
 		track ='{}/{}.exposures.positions.fits'.format(orbdata, self.release)
-		corners = '{}/{}.ccdcorners.fits'.format(orbdata, self.release)
+		corners = '{}/{}.ccdcorners.fits.gz'.format(orbdata, self.release)
 		
 		exp = tb.Table.read(track, 1)
 		try:
