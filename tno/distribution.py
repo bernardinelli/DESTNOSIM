@@ -14,6 +14,9 @@ class BaseDistribution:
 	Base class that all others inherit from. It corresponds to a delta function at zero. 
 	'''
 	def __init__(self):
+		'''
+		Initialization function. Doesn't do anything
+		'''
 		pass
 	def __add__(self, other):
 		return JointDistribution(self, other, 0.5)
@@ -21,14 +24,30 @@ class BaseDistribution:
 		return 0
 
 	def sample(self, n):
+		'''
+		Samples from this distribution
+
+		Arguments:
+		- n: number of samples
+		'''
 		return np.zeros(n)
 
 
 class AnalyticDistribution(BaseDistribution):
 	'''	
-	Given an analytic probability density function, samples from it
+	Given an analytic probability density function, samples from it using the inverse transform sampling algorithm from inv_sample.py
 	'''
 	def __init__(self, x_min, x_max, function, n_samp = 1000, n_bins = 100):
+		'''
+		Initialization function
+
+		Arguments:
+		- x_min: minimum value for the distribution
+		- x_max: maximum value for the distribution
+		- function: functional form of the distribution (eg a lambda function)
+		- n_samp: number of samples for the inv_sample code
+		- n_bins: number of bins for for the inv_sample code
+		'''
 		self.f = function
 		self.x_min = x_min
 		self.x_max = x_max
@@ -42,6 +61,12 @@ class AnalyticDistribution(BaseDistribution):
 		self.invCDF = ins.inverse_cdf(x, y, self.n_bins)
 
 	def sample(self, n):
+		'''
+		Samples from this distribution
+
+		Arguments:
+		- n: number of samples
+		'''
 		r = np.random.rand(n)
 		return self.invCDF(r)
 
@@ -56,9 +81,16 @@ class AnalyticDistribution(BaseDistribution):
 
 class DistributionFromHistogram(AnalyticDistribution):
 	'''
-	Samples from a histogram
+	Samples from the provided histogram using an inverse sampling algorithm
 	'''
 	def __init__(self, bins, pdf):
+		'''
+		Initialization function
+
+		Arguments:
+		- bins: bin edges of the histogram (numpy style)
+		- pdf: value of the histogram at the bins (numpy style)
+		'''
 		self.bins = bins
 		self.pdf = pdf 
 
@@ -70,12 +102,25 @@ class DistributionFromHistogram(AnalyticDistribution):
 		
 class DeltaFunction(BaseDistribution):
 	'''
-	Delta function centered at loc
+	Delta function centered at the provided location
 	'''
 	def __init__(self, loc):
+		'''
+		Initialization function
+
+		Arguments:
+		- loc: location of the delta function peak
+		'''
 		self.loc = loc
 		pass
 	def sample(self, n):
+		'''
+		Samples from this distribution
+
+		Arguments:
+		- n: number of samples
+		'''
+
 		return self.loc * np.ones(n)
 
 class PowerLaw(BaseDistribution):
@@ -83,6 +128,15 @@ class PowerLaw(BaseDistribution):
 	Power law of the form x^slope, defined between x_min and x_max
 	'''
 	def __init__(self, slope, x_min, x_max):
+		'''
+		Initialization function
+
+		Arguments:
+		- slope: slope - 1 of the power law (for numpy reasons)
+		- x_min: minimum value for the distribution
+		- x_max: maximum value for the distribution
+  
+		'''
 		self.slope = slope
 		self.x_min = x_min
 		self.x_max = x_max
@@ -90,6 +144,13 @@ class PowerLaw(BaseDistribution):
 		self.norm = self._normalization()
 
 	def sample(self, n):
+		'''
+		Samples from this distribution
+
+		Arguments:
+		- n: number of samples
+		'''
+
 		samp = np.random.power(self.slope + 1, size=n)
 		return self.x_min + self.scale * samp
 	
@@ -98,9 +159,18 @@ class PowerLaw(BaseDistribution):
 
 class JointDistribution(BaseDistribution):
 	'''
-	This returns alpha dist_1 + (1-alpha) dist_2
+	This returns a distribution that approximately samples alpha dist_1 + (1-alpha) dist_2
+	This is not exact, as it forces the proportionalities for the sampling
 	'''
 	def __init__(self, distribution_1, distribution_2, alpha):
+		'''
+		Initialization function
+
+		Arguments:
+		- distribution_1: first distribution object, 100*alpha% of the samples will come from it 
+		- distribution_2: second distribution object, 100*(1-alpha)% of the samples will come from it 
+		- alpha: relative size between distributions
+		'''
 		self.dist_1 = distribution_1
 		self.dist_2 = distribution_2
 		if alpha > 1 or alpha < 0:
@@ -108,6 +178,13 @@ class JointDistribution(BaseDistribution):
 		self.alpha = alpha
 
 	def sample(self, n):
+		'''
+		Samples from this distribution
+
+		Arguments:
+		- n: number of samples
+		'''
+
 		n_frac = int(self.alpha*n)
 		samp1 = self.dist_1.sample(n_frac)
 		samp2 = self.dist_2.sample(n - n_frac)
@@ -117,20 +194,60 @@ class JointDistribution(BaseDistribution):
 		return samp[perm]
 
 class Uniform(PowerLaw):
+	'''
+	Creates a uniform distribution between two different values
+	'''
 	def __init__(self, x_min, x_max):
+		'''
+		Initialization function
+		
+		Arguments:
+		- x_min: minimum value for the distribution
+		- x_max: maximum value for the distribution
+		'''
 		PowerLaw.__init__(self, 0, x_min, x_max)
 
 class Logarithmic(Uniform):
+	'''
+	Function for logarithmically distributed samples between two values
+	'''
 	def __init__(self, x_min, x_max):
+		'''
+		Initialization function
+		
+		Arguments:
+		- x_min: minimum value for the distribution
+		- x_max: maximum value for the distribution
+		'''
 		self._sampler = Uniform(np.log(x_min), np.log(x_max))
 		self.x_min = x_min
 		self.x_max = x_max
 
 	def sample(self, n):
+		'''
+		Samples from this distribution
+
+		Arguments:
+		- n: number of samples
+		'''
 		return np.exp(self._sampler.sample(n))
 
 class BrokenPowerLaw(AnalyticDistribution):
+	'''
+	Creates a broken power law with two different slopes, transitioning at a certain break point
+	'''
 	def __init__(self, slope_1, slope_2, x_min, x_max, x_break, x_norm = None):
+		'''
+		Initialization function
+
+		Arguments:
+		- slope_1: first slope, for x < x_break
+		- slope_2: second slope, for x > x_break
+		- x_min: minimum value for the distribution
+		- x_max: maximum value for the distribution
+		- x_break: break point of the distribution
+		- x_norm: normalization for the x values, for numerical stability
+		'''
 		self.x_break = x_break
 		self.slope_1 = slope_1
 		self.slope_2 = slope_2
@@ -143,7 +260,23 @@ class BrokenPowerLaw(AnalyticDistribution):
 		AnalyticDistribution.__init__(self, x_min, x_max, self.f)
 
 class DoublePowerLaw(AnalyticDistribution):
+	'''
+	Creates a double power law with two different slopes that become equal at a certain point x_eq
+	'''
+
 	def __init__(self, slope_1, slope_2, x_min, x_max, x_eq, x_shift):
+		'''
+		Initialization function
+
+		Arguments:
+		- slope_1: first slope, for x < x_break
+		- slope_2: second slope, for x > x_break
+		- x_min: minimum value for the distribution
+		- x_max: maximum value for the distribution
+		- x_eq: point where the two power laws are equal
+		- x_shift: the power laws use (x - x_shift), this value defines the shift point
+		'''
+
 		self.x_eq = x_eq
 		self.slope_1 = slope_1
 		self.slope_2 = slope_2
@@ -158,7 +291,20 @@ class DoublePowerLaw(AnalyticDistribution):
 		AnalyticDistribution.__init__(self, x_min, x_max, self.f)
 
 class RollingPowerLaw(AnalyticDistribution):
-	def __init__(self, slope, derivative, x_min, x_max, x_shift):
+	'''
+	Creates a rolling power law with two different slopes, one linear and one quadratic in the exponential
+	'''
+	def __init__(self, slope_1, slope_2, x_min, x_max, x_shift):
+		'''
+		Initialization function
+
+		Arguments:
+		- slope_1: first slope, for x < x_break
+		- slope_2: second slope, for x > x_break
+		- x_min: minimum value for the distribution
+		- x_max: maximum value for the distribution
+		- x_shift: the power laws use (x - x_shift), this value defines the shift point
+		'''
 		self.slope = slope
 		self.derivative = derivative
 		self.x_shift = x_shift
@@ -169,28 +315,83 @@ class RollingPowerLaw(AnalyticDistribution):
 
 
 class BrownDistribution(AnalyticDistribution):
-	def __init__(self, x_min, x_max, sigma):
+	'''
+	Brown distribution (Brown 2001) of the form sin(x) * exp(-(x-x_center)**2/2 sigma**2)
+	Assumes x is in degrees!
+	'''
+	def __init__(self, x_min, x_max, sigma, x_center):
+		'''
+		Initialization function
+
+		Arguments:
+		- x_min: minimum value for the distribution
+		- x_max: maximum value for the distribution
+		- sigma: sigma of the Gaussian term
+		- x_center: center of the Gaussian term
+		'''
 		self.sigma = sigma
-		self.f = lambda x : np.sin(x * np.pi/180) * np.exp(- (x/sigma)**2/2.)
+		self.f = lambda x : np.sin(x * np.pi/180) * np.exp(- ((x - x_center)/sigma)**2/2.)
 		AnalyticDistribution.__init__(self, x_min, x_max, self.f)
 
 class SinusoidalDistribution(AnalyticDistribution):
+	'''
+	Sinusoidal distribution
+	'''
 	def __init__(self, x_min, x_max):
+		'''
+		Initialization function
+		
+		Arguments:
+		- x_min: minimum value for the distribution
+		- x_max: maximum value for the distribution
+		'''
 		self.f = lambda x : np.sin(x * np.pi/180)
 		AnalyticDistribution.__init__(self, x_min, x_max, self.f)
 
 class RayleighDistribution(AnalyticDistribution):
-	def __init__(self, x_min, x_max, sigma):
+	'''
+	Rayleigh distribution of the form (x/sigma^2) * exp(- (x-x_center)^2 / 2 sigma^2)
+	'''
+	def __init__(self, x_min, x_max, sigma, x_center):
+		'''
+		Initialization function
+
+		Arguments:
+		- x_min: minimum value for the distribution
+		- x_max: maximum value for the distribution
+		- sigma: sigma of the Gaussian term
+		- x_center: center of the Gaussian term
+		'''
+
 		self.sigma = sigma
-		self.f = lambda x : (x /(sigma)**2)* np.exp(- (x/sigma)**2/2.)
+		self.f = lambda x : (x /(sigma)**2)* np.exp(- ((x - x_center)/sigma)**2/2.)
 		AnalyticDistribution.__init__(self, x_min, x_max, self.f)
 
 class FunctionalUniform(Uniform):
+	'''
+	Applies a given function to a sample of the Uniform distribution
+	'''
 	def __init__(self, x_min, x_max, function):
+		'''
+		Initialization function
+
+		Arguments:
+		- x_min: minimum value for the distribution
+		- x_max: maximum value for the distribution
+		- function: function to be applied to the uniform samples
+		'''
+
 		self.f = function 
 		self.uniform = Uniform(x_min, x_max)
 		Uniform.__init__(self, x_min, x_max)
 
 	def sample(self, n):
+		'''
+		Samples from this distribution
+
+		Arguments:
+		- n: number of samples
+		'''
+
 		s = self.uniform.sample(n)
 		return self.f(s)

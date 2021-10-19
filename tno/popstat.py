@@ -14,7 +14,8 @@ cc = CC('popstat')
 def compute_arccut(times):
 	'''
 	Computes ARCCUT, the time between the first and last detection dropping one night of detection
-	times must be in DAYS
+	Arguments:
+	- times: list of times, must be in DAYS
 	'''
 	arccut = 0.
 	t1 = np.min(times)
@@ -40,7 +41,9 @@ def compute_arccut(times):
 def compute_nunique(times):
 	'''
 	Computes NUNIQUE, the number of unique nights in which we have observations from an object
-	times must be in DAYS
+
+	Arguments:
+	- times: list of times, must be in DAYS
 	'''
 	nunique = 0
 
@@ -62,8 +65,15 @@ def compute_nunique(times):
 
 @numba.jit(nopython=True)
 def compute_triplet(times, thresh):
-	first_pair =  99.
-	second_pair = 99.
+	'''
+	Computes the time difference between triplets, returns if a triplet is formed
+
+	Arguments:
+	- times: list of times, must be in DAYS
+	- thresh: threshold time for pairs
+	'''
+	first_pair =  999.
+	second_pair = 999.
 	det = List()
 
 	det.append(times[0])
@@ -89,6 +99,13 @@ def compute_triplet(times, thresh):
 
 @numba.jit(nopython=True)
 def find_triplet_time(times):
+	'''
+	Computes the minimum triplet time for both pairs of an object
+
+	Arguments:
+	- times: list of times, must be in DAYS
+
+	'''
 	first_pair =  999.
 	second_pair = 999.
 	det = List()

@@ -3,11 +3,31 @@ import os
 import astropy.table as tb
 from astropy.wcs import WCS
 
+try:
+	import pixmappy
+	pix = True
+except ModuleNotFoundError:
+	pix = False
+
 class DESExposure(DECamExposure):
 	'''
-	DECamExposure with value added quantities from DES analysis. Examples: better astrometry and exposure completeness
+	DECamExposure with additional quantities from DES analysis. Examples: astrometry covariances and exposure completeness
 	'''
 	def __init__(self, expnum, ra, dec, mjd_mid, band, m50 = None, c = None, k = None, cov = None):
+		'''
+		Initialization class
+
+		Arguments:
+		- expnum: Exposure number 
+		- ra: R.A. pointing (degrees)
+		- dec: Declination pointing (degrees)
+		- mjd_mid: midpoint time of the exposure (mjd)
+		- band: exposure filter
+		- m50: magnitude of 50% completeness
+		- c: efficiency for completeness
+		- k: transition slope for completeness
+		- cov: astrometric covariance matrix
+		'''
 		DECamExposure.__init__(self,expnum, ra, dec, mjd_mid, band)
 		self.m50 = m50 
 		self.c = c
@@ -22,6 +42,12 @@ class DESExposure(DECamExposure):
 	def probDetection(self, m):
 		'''
 		Computes the detection probability of something with magnitude m in this exposure
+		
+		Arguments:
+		- m: magnitude (numpy array or float)
+		
+		Returns:
+		- detection probability, same shape as m
 		'''
 		if self.m50 != None:
 			return self.c/(1. + np.exp(self.k * (m - self.m50)))
@@ -31,17 +57,27 @@ class DESExposure(DECamExposure):
 	def getPixelCoordinates(self, ra, dec, ccd):
 		'''
 		Given a list of RAs and Decs on a given CCD, returns the x,y coordinates of the detections
+		using the pixmappy WCSs
+
+		Arguments:
+		- ra: list of R.A.s (degrees)
+		- dec: list of Decs (degrees)
+		- ccd: list of CCD numbers for WCS mapping
 		'''
 		try:
 			return self.wcs[ccd].toXY(ra, dec)
 		except:
 			raise ValueError("No CCD solution for {}/{}!".format(self.expnum, ccd))
 
-
 	def createWCSDict(self, pmc = None):
 		'''
 		Uses pixmappy to grab the CCD WCS solution
+
+		Arguments:
+		- pmc: pixmappy DESMaps() instance (optional)
 		'''
+		if not pix:
+			raise ModuleNotFoundError("You need pixmappy for this function!")
 		self.wcs = {}
 		self.fullwcs = True
 		if pmc == None:
@@ -60,7 +96,15 @@ class DESExposure(DECamExposure):
 	def getWCS(self, ccdnum, pmc = None):
 		'''
 		Uses pixmappy to grab the CCD WCS solution
+
+		Arguments:
+		- ccdnum: CCD number for solution
+		- pmc: pixmappy DESMaps() instance (optional)
+
 		'''
+		if not pix:
+			raise ModuleNotFoundError("You need pixmappy for this function!")
+
 		if pmc == None:
 			from pixmappy import DESMaps
 			pmc = DESMaps()
@@ -71,6 +115,9 @@ class DESExposure(DECamExposure):
 		'''
 		Generates a WCS dictionary using astropy.wcs and the wcs table for the exposure. 
 		Note that these are not the pixmappy solutions, so are less accurate
+
+		Arguments:
+		- expinfo: table of WCS information for the exposures coming from FITS headers
 		'''
 		self.wcs_db = {}
 		for i in expinfo:
@@ -81,6 +128,10 @@ class DESExposure(DECamExposure):
 		'''
 		Finds n_samples position errors given the shot noise for each value and the
 		atmospheric turbulence error matrix
+
+		Arguments:
+		- shotnoise: shot noise error in degrees
+		- n_samples: number of samples from the covariance matrix to be drawn
 		'''
 
 		#shot_err = shotnoisedist.sample(n_samples)
@@ -102,10 +153,16 @@ class DESExposure(DECamExposure):
 
 class DES(Survey):
 	'''
-	Full DES survey based on one of the release files. Examples: alldes, alldes6, y4a1, y4a1c
+	Full DES survey based on one of the release files. Examples: y4a1, y4a1c, y6a1, y6a1c
 	Main change between this and Survey is the support for completeness and atmospheric turbulence terms in the exposures
 	'''
 	def __init__(self, release):
+		'''
+		Initialization function
+
+		Arguments:
+		- release: name for the release, all data files need be of the form release.EXTENSION
+		'''
 		orbdata = os.getenv('DESDATA')
 
 		self.release = release
@@ -144,7 +201,12 @@ class DES(Survey):
 
 	def observePopulation(self, population, lightcurve = None, keepall = False):
 		'''
-		Uses the population's magnitudes to check if a detection is observable given the exposure completeness
+		Uses the population's magnitudes to check if a detection is observable given each exposure completeness
+
+		Arguments:
+		- population: Population object to be observed, requires magnitudes of each object
+		- lightcurve: list (or single) of lightcurve objects to these can be applied for the objects. If a list is provided, make sure len(lightcurve) == len(population)
+		- keepall: boolean, will split orbits between detections and non-detections if True
 		'''
 		try:
 			population.observations
