@@ -228,10 +228,10 @@ class Survey:
 							,'-readState={}'.format(population.state) , '-ra0={}'.format(ra0), 
 							'-dec0={}'.format(dec0),'-radius={}'.format(radius), '< {}.txt'.format(outputfile)]))
 
-			subprocess.call([orbitspp + '/DESTracks', '-cornerFile={}'.format(self.corners), 
+			subprocess.run(' '.join([orbitspp + '/DESTracks', '-cornerFile={}'.format(self.corners), 
 							'-exposureFile={}'.format(self.track), '-tdb0={}'.format(population.epoch), '-positionFile={}.fits'.format(outputfile)
 							,'-readState={}'.format(population.state) , '-ra0={}'.format(ra0), 
-							'-dec0={}'.format(dec0),'-radius={}'.format(radius), '< {}.txt'.format(outputfile)], stdin = f)
+							'-dec0={}'.format(dec0),'-radius={}'.format(radius), ' < {}.txt'.format(outputfile)]), stdin = f, shell = True)
 
 		if not os.path.exists(outputfile + '.fits'):
 			raise ValueError("$ORBITSPP call did not terminate succesfully!")
