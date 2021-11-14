@@ -26,8 +26,10 @@ The Python package can be installed in a standard way:
     python3 setup.py install
 ```
 
-Make sure your environment has a `ORBITSPP` variable pointing to the `bin` folder of your `orbitspp` installation. In order to use the `des`-specific functions, you'll need the correspondent exposure and ccd corner files, located in a folder defined by your `DESDATA` environment variable. The data folder is what should be inside your `DESDATA` folder and contains the required files.
+Make sure your environment has a `ORBITSPP` variable pointing to the `bin` folder of your `orbitspp` installation. This will link the C++ software with some of the tools present here.
+
+In order to use the `des`-specific functions, you'll need the correspondent exposure and ccd corner files (located in the [`data`](data/) directory). Their location should be specified by defining an environment variable called `DESDATA`. The [`data`](data/) folder needs to be downloaded separately from the cloning/download of the repository, as the files sizes are a bit large. 
 
 
 ### Usage
-A simple tutorial for the software included here is included [here](Examples/DESTNOSIM Tutorial.ipynb). This tutorial projects the almost 70 thousand synthethic objects from the CFEPS-L7 model into the DES exposures and evaluates the detectability of all objects. For more advanced usage, the user is encouraged to delve into the files and the documentation. 
+A simple tutorial for the software included here is included [here](Examples/DESTNOSIM_Tutorial.ipynb). This tutorial projects the almost 70 thousand synthethic objects from the CFEPS-L7 model into the DES exposures and evaluates the detectability of all objects. For more advanced usage, the user is encouraged to delve into the files and the documentation. 

@@ -78,12 +78,12 @@ def minusLogP(params, mdet, mnon, res_collect, detprob):
     - detprob: functional form (eg detprob_logit or detprob_double)
     '''
 
-    if params[1] > 1.:
+    if params[-1] > 1.:
         # this ensures that c cannot continue to rise above 1 by referencing 
         # the value of the previous trial in the optimizer
-        res_collect.append(res_collect[-1] + (params[2] - 1.)*1e5)
+        res_collect.append(res_collect[-1] + (params[1] - 1.)*1e5)
         return res_collect[-1] + 1e7
-    elif params[1] <= 0.:
+    elif params[-1] <= 0.:
         return res_collect[-1] + 1e7
     else:
         pdet = detprob(mdet,params)
@@ -92,7 +92,7 @@ def minusLogP(params, mdet, mnon, res_collect, detprob):
         result += np.sum(np.log(1-pnon))
         return -result
 
-def find_m50(m_det, m_miss, detprob = detprob_logit, init = (23,5,1)):
+def find_m50(m_det, m_miss, detprob = detprob_logit, init = (23,1,5)):
 	'''
 	Fits the provided function by taking the product of the detected probabilities and 1-non-detection probabilities
 
