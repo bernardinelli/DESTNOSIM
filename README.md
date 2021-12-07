@@ -33,3 +33,6 @@ In order to use the `des`-specific functions, you'll need the correspondent expo
 
 ### Usage
 A simple tutorial for the software included here is included [here](Examples/DESTNOSIM_Tutorial.ipynb). This tutorial projects the almost 70 thousand synthethic objects from the CFEPS-L7 model into the DES exposures and evaluates the detectability of all objects. For more advanced usage, the user is encouraged to delve into the files and the documentation. 
+
+**WARNING**
+In some versions of MacOS, there is a safety feature that does not propagate environment variables to shells that are generated inside other processes. What this means for `destnosim` is that `orbitspp` calls from inside python shells do *not* load `orbitspp` correctly. This is unfortunate, and a fix is forthcoming. In the meanwhile, the code will print the correct command line calls to `orbitspp`, and you can run these in your own shell. We apologize for the somewhat messy problem!

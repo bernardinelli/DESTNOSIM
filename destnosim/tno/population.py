@@ -51,6 +51,8 @@ class Population:
 		self.elementType = elementType
 		self.epoch = epoch
 		self.elements = np.zeros((n_objects, 6)) 
+		
+		self.hasRADec = False
 
 		if self.elementType == 'keplerian':
 			self.state = 'F'
@@ -322,6 +324,47 @@ class Population:
 	def __getitem__(self, index):
 		return self.elements[index,:]
 
+	def checkInFootprint(self, footprint = orbdata + '/round17-poly.txt'):
+		'''
+		Checks which objects are inside the footprint
+		
+		Arguments:
+		- footprint: file containing details of the footprint
+
+		'''
+		import matplotlib.path as mpath
+		p = np.loadtxt(footprint)
+		path = mpath.Path(p)
+
+		inside = path.contains_points(np.array([self.ra, self.dec]).T)
+
+		self.elements = self.elements[inside]
+		if not self.hasRADec:
+			self.getRADec()
+		self.ra = self.ra[inside]
+		self.dec = self.dec[inside]
+		
+		self.n_objects = len(self.elements)
+		#self.n_grid = np.ceil(self.n_objects/2)
+
+	def getRADec(self, heliocentric = False, ecliptic = False, observer_pos = np.array([0,0,0])):
+		if self.elementType == 'keplerian':
+			state = self.transformElements()
+		else:
+			state = self
+		xv_eq = rotate_to_ecliptic(state.elements)
+
+		x_vec = xv_eq[:,3] - observer_pos
+
+		## note RA is y/x, so atan2 becomes x/y... 
+		self.ra = np.arctan2(x_vec[:,0], x_vec[:,1]) * 180./np.pi
+
+		self.dec = np.arcsin(x_vec[:,2]/np.sqrt(x_vec[:,0]**2 + x_vec[:,1]**2 + x_vec[:,2]**2))
+
+
+
+
+
 
 
 class ElementPopulation(Population):
@@ -544,6 +587,7 @@ class IsotropicPopulation(CartesianPopulation):
 		Population.__init__(self, size, 'cartesian', epoch)
 		self.n_grid = n_grid
 		self._generateShell()
+		self.hasRADec = True
 		if drop_outside:
 			self.checkInFootprint(footprint)
 		self._generateVelocityShell()
@@ -605,26 +649,4 @@ class IsotropicPopulation(CartesianPopulation):
 		self.elements[:,5] *= v_escape * v_scale
 
 		self.v = v_escape * v_scale
-
-	def checkInFootprint(self, footprint = orbdata + '/round17-poly.txt'):
-		'''
-		Checks which objects are inside the footprint
-		
-		Arguments:
-		- footprint: file containing details of the footprint
-
-		'''
-		import matplotlib.path as mpath
-		p = np.loadtxt(footprint)
-		path = mpath.Path(p)
-
-		inside = path.contains_points(np.array([self.ra, self.dec]).T)
-
-		self.elements = self.elements[inside]
-		self.ra = self.ra[inside]
-		self.dec = self.dec[inside]
-		
-		self.n_objects = len(self.elements)
-		self.n_grid = np.ceil(self.n_objects/2)
-
 
