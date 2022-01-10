@@ -202,12 +202,16 @@ class Population:
 		except:
 			raise AttributeError("Population has no detections attribute. Perhaps you need to call survey.observePopulation first?")
 
+
 		#consider only detections inside a CCD
-		self.detections.remove_rows(np.where(self.detections['CCDNUM'] == 0))
+		ccdzero = np.where(self.detections['CCDNUM'] == 0)
+		if len(ccdzero) > 0:
+			self.detections.remove_rows(np.where(self.detections['CCDNUM'] == 0))
 
 		#transient efficiency
-		self.detections['RANDOM'] = np.random.rand(len(self.detections))
-		self.detections.remove_rows(np.where(self.detections['RANDOM'] > transient_efficiency))
+		if 'RANDOM' not in self.detections.keys():
+			self.detections['RANDOM'] = np.random.rand(len(self.detections))
+			self.detections.remove_rows(np.where(self.detections['RANDOM'] > transient_efficiency))
 
 		#index the table to make things easier
 		self.detections.add_index('ORBITID')
@@ -229,28 +233,35 @@ class Population:
 				has_trip = False
 			stat.add_row([i, arc, arccut, nunique, len(times), has_trip, pt[0], pt[1]])
 
+		stack = [stat]
 		ones = tb.Table()
 		ones['ORBITID'] = ids[counts == 1]
-		ones['ARC'] = 0.
-		ones['ARCCUT'] = 0.
-		ones['NUNIQUE'] = 1
-		ones['NDETECT'] = 1
-		ones['TRIPLET'] = False
-		ones['PAIR_1'] = 0
-		ones['PAIR_2'] = 0
+		if len(ones) > 0:
+			ones['ARC'] = 0.
+			ones['ARCCUT'] = 0.
+			ones['NUNIQUE'] = 1
+			ones['NDETECT'] = 1
+			ones['TRIPLET'] = False
+			ones['PAIR_1'] = 0
+			ones['PAIR_2'] = 0
+			stack.append(ones)
+
 
 		orbid = np.arange(len(self))
 		zeros = tb.Table()
 		zeros['ORBITID'] = orbid[np.isin(orbid, ids, invert = True)]
-		zeros['ARC'] = 0.
-		zeros['ARCCUT'] = 0.
-		zeros['NUNIQUE'] = 0
-		zeros['NDETECT'] = 0
-		zeros['TRIPLET'] = False
-		zeros['PAIR_1'] = 0
-		zeros['PAIR_2'] = 0
+		if len(zeros) > 0:
+			zeros['ARC'] = 0.
+			zeros['ARCCUT'] = 0.
+			zeros['NUNIQUE'] = 0
+			zeros['NDETECT'] = 0
+			zeros['TRIPLET'] = False
+			zeros['PAIR_1'] = 0
+			zeros['PAIR_2'] = 0
+			stack.append(zeros)
 
-		stat = tb.vstack([stat, ones, zeros])
+
+		stat = tb.vstack(stack)
 		stat.sort('ORBITID')
 
 		self.statistics = stat

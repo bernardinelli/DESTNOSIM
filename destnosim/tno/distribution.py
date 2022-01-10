@@ -207,6 +207,14 @@ class Uniform(PowerLaw):
 		'''
 		PowerLaw.__init__(self, 0, x_min, x_max)
 
+class GaussianDistribution(BaseDistribution):
+	def __init__(self, mu, sigma):
+		self.mu = mu 
+		self.sigma = sigma
+	def sample(self, n):
+		return np.random.normal(size=n, loc=mu, scale=sigma)
+		
+
 class Logarithmic(Uniform):
 	'''
 	Function for logarithmically distributed samples between two values
