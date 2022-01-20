@@ -212,7 +212,7 @@ class GaussianDistribution(BaseDistribution):
 		self.mu = mu 
 		self.sigma = sigma
 	def sample(self, n):
-		return np.random.normal(size=n, loc=mu, scale=sigma)
+		return np.random.normal(size=n, loc=self.mu, scale=self.sigma)
 		
 
 class Logarithmic(Uniform):
