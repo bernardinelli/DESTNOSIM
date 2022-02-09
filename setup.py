@@ -26,7 +26,7 @@ data = glob.glob(os.path.join('data', '*'))
 
 dist = setup(
 	name = "DESTNOSIM",
-	version = "1.0.0",
+	version = "1.1.0",
 	author = "Pedro Bernardinelli",
 	author_email = "pedrobe@sas.upenn.edu",
 	description = "Python module for simulating DES TNO observations",

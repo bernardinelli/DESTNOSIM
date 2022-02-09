@@ -347,11 +347,12 @@ class Population:
 		p = np.loadtxt(footprint)
 		path = mpath.Path(p)
 
+		if not self.hasRADec:
+			self.getRADec()
+
 		inside = path.contains_points(np.array([self.ra, self.dec]).T)
 
 		self.elements = self.elements[inside]
-		if not self.hasRADec:
-			self.getRADec()
 		self.ra = self.ra[inside]
 		self.dec = self.dec[inside]
 		
@@ -360,17 +361,18 @@ class Population:
 
 	def getRADec(self, heliocentric = False, ecliptic = False, observer_pos = np.array([0,0,0])):
 		if self.elementType == 'keplerian':
-			state = self.transformElements()
+			xv = keplerian_to_cartesian(self.elements, self.epoch, heliocentric, ecliptic)
 		else:
-			state = self
-		xv_eq = rotate_to_ecliptic(state.elements)
+			xv = self.elements
+		xv_eq = rotate_to_ecliptic(xv)
 
-		x_vec = xv_eq[:,3] - observer_pos
+		x_vec = xv_eq[:,:3] - observer_pos
 
-		## note RA is y/x, so atan2 becomes x/y... 
-		self.ra = np.arctan2(x_vec[:,0], x_vec[:,1]) * 180./np.pi
+		self.ra = np.arctan2(x_vec[:,1], x_vec[:,0]) * 180./np.pi
 
-		self.dec = np.arcsin(x_vec[:,2]/np.sqrt(x_vec[:,0]**2 + x_vec[:,1]**2 + x_vec[:,2]**2))
+		self.dec = np.arcsin(x_vec[:,2]/np.sqrt(x_vec[:,0]**2 + x_vec[:,1]**2 + x_vec[:,2]**2)) * 180/np.pi
+
+		self.hasRADec = True
 
 
 
