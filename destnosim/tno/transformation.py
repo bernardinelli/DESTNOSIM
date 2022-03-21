@@ -227,7 +227,7 @@ def keplerian_to_cartesian(keplerian, epoch, helio = False, ecliptic = True):
 		keplerian (n x 6 array): Keplerian orbital elements, (a,e,i,omega,Omega,T_p)
 		epoch (float): Epoch at which the elements are defined, in years
 		helio (bool, default = False): Switches between barycentric and heliocentric elements (False is barycentric)
-		ecliptic (bool, default = False): Use true if input elements are equatorially-aligned (ICRS)
+		ecliptic (bool, default = True): Use true if output elements are ecliptic-aligned 
 	Returns:
 		aei (n x 6 array): array with (x,y,z,vx,vy,vz) elements
 	'''
