@@ -395,10 +395,10 @@ class Population:
 
 			rock = spacerocks.SpaceRock(a = self.elements[:,0], e = self.elements[:,1], inc = self.elements[:,2],
 										node = self.elements[:,3], arg = self.elements[:,4], M = M,
-										epoch = len(self) * [epoch.mjd], units = units, name=names, origin=origin, frame='eclipticJ2000')
+										epoch = len(self) * [epoch.mjd], units = units, name=names, origin=origin, frame='eclipJ2000')
 
 		else:
-			frame = 'eclipticJ2000' if self.ecliptic else 'J2000'
+			frame = 'eclipJ2000' if self.ecliptic else 'J2000'
 			rock = spacerocks.SpaceRock(x = self.elements[:,0], y = self.elements[:,1], z = self.elements[:,2],
 										vx = self.elements[:,3], vy = self.elements[:,4], vz = self.elements[:,5],
 										epoch = len(self) * [epoch.mjd], units = units, frame = frame, name=names, origin=origin)
