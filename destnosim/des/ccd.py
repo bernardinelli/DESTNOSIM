@@ -1,5 +1,6 @@
 import numpy as np 
 from scipy.spatial import cKDTree
+import numba 
 
 ccdBounds = {'N1': (-1.0811, -0.782681, -0.157306, -0.00750506),
              'N2': (-0.771362, -0.472493, -0.157385, -0.00749848), 
@@ -72,6 +73,29 @@ ccdnums =  {'S29': 1, 'S30':  2, 'S31':  3, 'S25':  4, 'S26':  5, 'S27':  6, 'S2
 			'N19': 50, 'N20':  51, 'N21':  52, 'N22':  53, 'N23':  54, 'N24':  55, 'N25':  56, 'N26':  57, 'N27':  58, 'N28':  59, 'N29':  60, 'N30':  61, 'N31':  62}
 
 
+#@numba.njit('f8[:,:](f8[:],f8[:],f8[:],f8[:])')
+def bulk_gnomonic(ra, dec, ra_0, dec_0):
+    '''
+    Performs a Gnomonic projection on multiple reference systems at a time
+    '''
+
+    c_dec_0 = np.cos(np.pi*dec_0/180.)
+    s_dec_0 = np.sin(np.pi*dec_0/180.)
+    c_dec   = np.cos(np.pi*dec/180.)
+    s_dec   = np.sin(np.pi*dec/180.)
+    c_ra    = np.cos(np.pi*(ra-ra_0)/180.)
+    s_ra    = np.sin(np.pi*(ra-ra_0)/180.)
+
+    cos_c = s_dec_0*s_dec + c_dec_0*c_dec*c_ra
+
+    theta = np.zeros((len(ra), 2))
+    theta[:,0] = c_dec*s_ra/cos_c
+    theta[:,1] = (c_dec_0*s_dec - s_dec_0*c_dec*c_ra)/cos_c
+
+    return theta * 180/np.pi
+
+
+
 def create_ccdtree():
     '''
      Creates a kD tree of the CCDs and a list of keys
@@ -93,7 +117,7 @@ def create_ccdtree():
     ccd_tree = cKDTree(ccd_query)
     return ccd_tree, ccd_keys
 
-
+@numba.njit('b1(f8,f8,f8[:,:])')
 def ray_tracing(x,y,poly):
     ''' 
     2D Ray tracing algorithm that tests if a point is inside the poly(gon) coordinates given

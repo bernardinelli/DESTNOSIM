@@ -6,6 +6,8 @@ import os
 import subprocess
 import astropy.table as tb 
 from scipy.spatial import cKDTree
+from astropy.time import Time  
+import spacerocks 
 
 class DECamExposure:
 	'''
@@ -30,6 +32,7 @@ class DECamExposure:
 		self.dec = dec
 		self.mjd = mjd_mid
 		self.band = band
+		self.corners = {}
 
 	def gnomonicProjection(self, ra, dec):
 		'''
@@ -137,7 +140,6 @@ class DECamExposure:
 		Returns:
 		- List of booleans if the RA/Dec pair belongs to its correspondent CCD.
 		'''
-		from ccd import ray_tracing
 
 		try:
 			self.corners
@@ -184,6 +186,8 @@ class Survey:
 		self.track = track
 		self.corners = corners
 
+		self._hascorners = False
+
 	def createExposures(self):
 		'''
 		Creates a dictionary of DECamExposures for the Survey inside self.exposures
@@ -191,6 +195,23 @@ class Survey:
 		self.exposures = {}
 		for ra,dec,mjd,n,b in zip(self.ra, self.dec, self.mjd, self.expnum, self.band):
 			self.exposures[n] = DECamExposure(n, ra, dec, mjd, b)
+
+	def _createEarthSpaceRock(self):
+		'''
+		Creates the pre-computed Earth positions from SpaceRocks
+		'''
+		import astropy.units as u
+		table = tb.Table.read(self.track)
+
+		self.times = Time(self.mjd, format='mjd', scale='tdb')
+		units = spacerocks.Units()
+		units.timescale = 'tdb'
+		units.timeformat = 'mjd'
+		units.speed = u.au/u.yr
+
+		self.earth =  spacerocks.SpaceRock(x = table['observatory'][:,0], y = table['observatory'][:,1], z = table['observatory'][:,2],
+										   vx = table['velocity'][:,0], vy = table['velocity'][:,1], vz = table['velocity'][:,2],
+										   epoch = self.times, units = units, origin = 'ssb', frame='J2000')
 
 	def createObservations(self, population, outputfile, useold = False, ra0 = 10, dec0 = -20, radius = 85):
 		'''
@@ -239,6 +260,104 @@ class Survey:
 
 		population.observations =  tb.Table.read(outputfile + '.fits')
 
+	def createObservationsSpacerocks(self, population):
+		'''
+		Calls the Spacerocks backend to generate observations for the input population
+
+
+		Arguments:
+		- population: Population object for the input orbits
+		'''
+		## first set up times and do spacerock stuff
+
+		self.createEarthSpaceRock()
+
+		rock = population.generateSpaceRocks()
+		prop, planets, sim = rock.propagate(epochs = self.times.mjd, model='ORBITSPP')
+		del planets, sim 
+		obs = prop.observe(observer=self.earth)
+
+
+		## gather data into something useable
+
+		t = tb.Table()
+		t['RA'] = obs.ra.deg 
+		t['RA'][t['RA'] > 180] -= 360
+		t['DEC'] = obs.dec.deg 
+		t['EXPNUM'] = len(population) * list(self.expnum)
+		t['ORBITID'] = len(self.expnum) * list(range(len(population)))
+
+		exp = tb.Table()
+		exp['EXPNUM'] = np.array(self.expnum)
+		exp['RA_CENTER'] = np.array(self.ra)
+		exp['RA_CENTER'][exp['RA_CENTER'] > 180] -= 360
+		exp['DEC_CENTER'] = np.array(self.dec) 
+
+		t = tb.join(t, exp)
+		t['DELTA'] = np.sqrt( (( t['RA'] - t['RA_CENTER']) * np.cos(t['DEC_CENTER'] * np.pi/180))**2 +  (t['DEC'] - t['DEC_CENTER'])**2)
+
+		t = t[t['DELTA'] < 1.5]
+
+		theta = bulk_gnomonic(np.array(t['RA']), np.array(t['DEC']), np.array(t['RA_CENTER']), np.array(t['DEC_CENTER']))
+		#rescale for kD tree
+		theta[:,1] *= 2
+
+		ccd_tree, ccd_keys = create_ccdtree()
+
+		tree = cKDTree(theta)
+		# kD tree ccd checker
+		inside_CCD = ccd_tree.query_ball_tree(tree, 0.149931 * 1.001, p = np.inf)
+		
+		if inside_CCD != None: 
+			ccd_id = [len(inside_CCD[i])*[ccdnums[ccd_keys[i]]] for i in range(len(inside_CCD)) if len(inside_CCD[i]) > 0]
+			inside_CCD = np.array(list(chain(*inside_CCD)))
+			if len(inside_CCD) > 0:
+				ccdlist = list(chain(*ccd_id))
+			else:
+				print('No observations!')
+				self.population = tb.Table(column=['RA', 'DEC', 'EXPNUM', 'ORBITID'])
+				return None
+		else:
+			print('No observations!')
+			self.population = tb.Table(column=['RA', 'DEC', 'EXPNUM', 'ORBITID'])
+			return None 
+
+		t = t[inside_CCD]
+		t['CCDNUM'] = ccdlist
+
+
+
+
+		# we need the exposure objects here for the proper CCD stuff
+
+		try:
+			self.exposures
+		except AttributeError:
+			self.createExposures()
+
+		if not self._hascorners:
+			self.collectCorners()
+
+
+		inside_ccd = np.zeros(len(t), dtype='bool')
+
+
+		for i in range(len(t)):
+
+			# proper corners
+			if t[i]['CCDNUM'] not in self.exposures[t[i]['EXPNUM']].corners:
+				ins = False
+			else:
+				ins = ray_tracing(t[i]['RA'], t[i]['DEC'], self.exposures[t[i]['EXPNUM']].corners[t[i]['CCDNUM']])
+
+			inside_ccd[i] = ins 
+
+
+		obs = t[inside_ccd]
+		obs.sort(['ORBITID','EXPNUM'])
+
+		population.observations = obs['RA', 'DEC', 'EXPNUM', 'CCDNUM', 'ORBITID']
+
 	def __getitem__(self, key):
 		'''
 		Allows DECamExposures to be accessed by indexing the Survey object
@@ -269,23 +388,16 @@ class Survey:
 		except AttributeError:
 			self.createExposures()
 
-		
-		corners.add_index('expnum')
+		corners = corners[np.isin(corners['expnum'], self.expnum)]
+		#corners.add_index('expnum')
 
-		for i in self.exposures:
-			try:
-				exp = corners.loc[i]
+		for i in corners:
+			rac = i['ra'][:-1]
+			decc = i['dec'][:-1]
 
-				self.exposures[i].corners = {}
+			self.exposures[i['expnum']].corners[i['ccdnum']] = np.array([rac,decc]).T
 
-				for j in exp:
-					ra = j['ra'][:-1]
-					dec = j['dec'][:-1]
-
-					self.exposures[i].corners[j['ccdnum']] = [[r,d] for r,d in zip(ra,dec)]
-			except:
-				self.exposures[i].corners = None
-
+		self._hascorners = True
 
 
 

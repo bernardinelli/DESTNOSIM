@@ -267,7 +267,6 @@ class Population:
 		self.statistics = stat
 
 
-
 	def randomizeElement(self, element, distribution):
 		'''
 		Randomizes element (must be an integer between 0 and 5) according to the provided distribution (from `distribution.py`)
@@ -374,11 +373,37 @@ class Population:
 
 		self.hasRADec = True
 
+	def generateSpaceRocks(self):
+		import spacerocks
+		import astropy.time as tm 
+		import astropy.units as u 
 
+		epoch = tm.Time(2000 + self.epoch, scale='tdb', format='jyear')
+		epoch.format = 'mjd'
+		units = spacerocks.Units()
+		units.timescale = 'tdb'
+		units.timeformat = 'mjd'
+		units.speed = u.au/u.yr
+		origin = 'sun' if self.heliocentric else 'ssb'
 
+		names = [f'{i}' for i in range(len(self))]
 
+		if self.elementType == 'keplerian':
+			mu = SunGM if self.heliocentric else SolarSystemGM
 
+			M = np.rad2deg((self.epoch - self.elements[:,5])*(np.sqrt(mu)/np.power(self.elements[:,0],3./2)))
 
+			rock = spacerocks.SpaceRock(a = self.elements[:,0], e = self.elements[:,1], inc = self.elements[:,2],
+										node = self.elements[:,3], arg = self.elements[:,4], M = M,
+										epoch = len(self) * [epoch.mjd], units = units, name=names, origin=origin, frame='eclipticJ2000')
+
+		else:
+			frame = 'eclipticJ2000' if self.ecliptic else 'J2000'
+			rock = spacerocks.SpaceRock(x = self.elements[:,0], y = self.elements[:,1], z = self.elements[:,2],
+										vx = self.elements[:,3], vy = self.elements[:,4], vz = self.elements[:,5],
+										epoch = len(self) * [epoch.mjd], units = units, frame = frame, name=names, origin=origin)
+
+		return rock
 
 class ElementPopulation(Population):
 	'''

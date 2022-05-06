@@ -14,7 +14,7 @@ except ImportError:
     print("Using distutils version",distutils.__version__)
 
 
-dependencies = ['numpy', 'astropy', 'scipy', 'numba']
+dependencies = ['numpy', 'astropy', 'scipy', 'numba', 'spacerocks']
 
 with open('README.md') as file:
 	long_description = file.read()
@@ -26,11 +26,12 @@ data = glob.glob(os.path.join('data', '*'))
 
 dist = setup(
 	name = "DESTNOSIM",
-	version = "1.1.0",
+	version = "1.2.0",
 	author = "Pedro Bernardinelli",
 	author_email = "pedrobe@sas.upenn.edu",
 	description = "Python module for simulating DES TNO observations",
 	long_description = long_description,
+	long_description_content_type='text/markdown',
 	license = "BSD License",
 	url = "https://github.com/bernardinelli/DESTNOSIM",
 	packages = ['destnosim', 'destnosim.des', 'destnosim.tno'],

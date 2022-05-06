@@ -1,0 +1,4 @@
+exclude data/*
+exclude Examples/*
+global-exclude */__pycache__/*
+exclude .git*
