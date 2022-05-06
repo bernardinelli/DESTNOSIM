@@ -272,7 +272,7 @@ class Survey:
 
 		self.createEarthSpaceRock()
 
-		rock = population.generateSpaceRocks()
+		rock = population._generateSpaceRocks()
 		prop, planets, sim = rock.propagate(epochs = self.times.mjd, model='ORBITSPP')
 		del planets, sim 
 		obs = prop.observe(observer=self.earth)
