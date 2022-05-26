@@ -54,7 +54,7 @@ class DESExposure(DECamExposure):
 		else:
 			return np.zeros_like(m)
 
-	def getPixelCoordinates(self, ra, dec, ccd):
+	def getPixelCoordinates(self, ra, dec, ccd, c = 0.61):
 		'''
 		Given a list of RAs and Decs on a given CCD, returns the x,y coordinates of the detections
 		using the pixmappy WCSs
@@ -65,7 +65,7 @@ class DESExposure(DECamExposure):
 		- ccd: list of CCD numbers for WCS mapping
 		'''
 		try:
-			return self.wcs[ccd].toXY(ra, dec)
+			return self.wcs[ccd].toPix(ra, dec, c = c)
 		except:
 			raise ValueError("No CCD solution for {}/{}!".format(self.expnum, ccd))
 
