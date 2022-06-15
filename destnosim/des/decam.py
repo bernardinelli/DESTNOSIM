@@ -4,10 +4,20 @@ from itertools import chain
 from .ccd import *
 import os 
 import subprocess
-import astropy.table as tb 
+
 from scipy.spatial import cKDTree
+
+import astropy.table as tb 
 from astropy.time import Time  
+from astropy import units as u
+
 import spacerocks 
+from spacerocks.units import Units
+from spacerocks.simulation import Simulation
+from spacerocks.model import PerturberModel, builtin_models
+from spacerocks.cbindings import correct_for_ltt_destnosim
+from spacerocks.observer import Observer
+from spacerocks.constants import epsilon
 
 class DECamExposure:
 	'''
@@ -260,7 +270,7 @@ class Survey:
 
 		population.observations =  tb.Table.read(outputfile + '.fits')
 
-	def createObservationsSpacerocks(self, population):
+	def createObservationsSpacerocks(self, population, progress=True):
 		'''
 		Calls the Spacerocks backend to generate observations for the input population
 
@@ -270,20 +280,74 @@ class Survey:
 		'''
 		## first set up times and do spacerock stuff
 
-		self.createEarthSpaceRock()
+		#self.createEarthSpaceRock()
+		self.times = Time(self.mjd, format='mjd', scale='utc')
+		rocks = population.generateSpaceRocks()
 
-		rock = population._generateSpaceRocks()
-		prop, planets, sim = rock.propagate(epochs = self.times.mjd, model='ORBITSPP')
-		del planets, sim 
-		obs = prop.observe(observer=self.earth)
+		units = Units()
+		units.timescale = 'utc'
+		units.timeformat = 'jd'
+		units.mass = u.M_sun
+        
+		spiceids, kernel, masses = builtin_models['ORBITSPP']
+		model = PerturberModel(spiceids=spiceids, masses=masses)
+		
+		sim = Simulation(model=model, epoch=self.times.jd[0], units=units)
+		sim.add_spacerocks(rocks)
+		sim.integrator = 'leapfrog'
 
+		lons = []
+		lats = []
+
+		if progress == True:
+			from rich.progress import track
+			epochs = track(self.times.jd)
+		else:
+			epochs = self.times.jd
+
+		for epoch in epochs:
+			sim.integrate(epoch, exact_finish_time=1)
+			a = np.zeros((sim.N, 3), dtype=np.double)
+			b = np.zeros((sim.N, 3), dtype=np.double)
+			sim.serialize_particle_data(xyz=a, vxvyvz=b)
+			x, y, z = a.T
+			vx, vy, vz = b.T
+        
+			x = np.ascontiguousarray(x)[sim.N_active:]
+			y = np.ascontiguousarray(y)[sim.N_active:]
+			z = np.ascontiguousarray(z)[sim.N_active:]
+			vx = np.ascontiguousarray(vx)[sim.N_active:]
+			vy = np.ascontiguousarray(vy)[sim.N_active:]
+			vz = np.ascontiguousarray(vz)[sim.N_active:]
+
+			observer = Observer(epoch=epoch, obscode='W84', units=units)
+			ox = observer.x.au.astype(np.double)
+			oy = observer.y.au.astype(np.double)
+			oz = observer.z.au.astype(np.double)
+			ovx = observer.vx.value.astype(np.double)
+			ovy = observer.vy.value.astype(np.double)
+			ovz = observer.vz.value.astype(np.double)
+			
+			# Compute ltt-corrected topocentroc Ecliptic coordinates
+			xt, yt, zt = correct_for_ltt_destnosim(x, y, z, vx, vy, vz, ox, oy, oz, ovx, ovy, ovz)
+			lon = np.arctan2(yt, xt)
+			lat = np.arcsin(zt / np.sqrt(xt**2 + yt**2 + zt**2))
+        	
+			lons.extend(lon)
+			lats.extend(lat)
+
+		lats = np.array(lats)
+		lons = np.array(lons)
+
+		decs = np.degrees(np.arcsin(np.sin(lats) * np.cos(epsilon) * np.cos(lats) * np.sin(lons) * np.sin(epsilon)))
+		ras = np.arctan2((np.cos(lats) * np.cos(epsilon) * np.sin(lons) - np.sin(lats) * np.sin(epsilon)), np.cos(lons) * np.cos(lats))
 
 		## gather data into something useable
 
 		t = tb.Table()
-		t['RA'] = obs.ra.deg 
+		t['RA'] = ras
 		t['RA'][t['RA'] > 180] -= 360
-		t['DEC'] = obs.dec.deg 
+		t['DEC'] = decs
 		t['EXPNUM'] = len(population) * list(self.expnum)
 		t['ORBITID'] = len(self.expnum) * list(range(len(population)))
 
@@ -324,8 +388,6 @@ class Survey:
 
 		t = t[inside_CCD]
 		t['CCDNUM'] = ccdlist
-
-
 
 
 		# we need the exposure objects here for the proper CCD stuff
