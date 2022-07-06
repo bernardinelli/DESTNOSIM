@@ -340,7 +340,7 @@ class Survey:
 		lons = np.array(lons)
 
 		decs = np.degrees(np.arcsin(np.sin(lats) * np.cos(epsilon) * np.cos(lats) * np.sin(lons) * np.sin(epsilon)))
-		ras = np.arctan2((np.cos(lats) * np.cos(epsilon) * np.sin(lons) - np.sin(lats) * np.sin(epsilon)), np.cos(lons) * np.cos(lats))
+		ras = np.degrees(np.arctan2((np.cos(lats) * np.cos(epsilon) * np.sin(lons) - np.sin(lats) * np.sin(epsilon)), np.cos(lons) * np.cos(lats)))
 
 		## gather data into something useable
 
