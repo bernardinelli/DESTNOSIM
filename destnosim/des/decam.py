@@ -419,6 +419,7 @@ class Survey:
 		obs.sort(['ORBITID','EXPNUM'])
 
 		population.observations = obs['RA', 'DEC', 'EXPNUM', 'CCDNUM', 'ORBITID']
+	
 
 	def __getitem__(self, key):
 		'''
