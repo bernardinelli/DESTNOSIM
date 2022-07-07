@@ -117,7 +117,7 @@ def create_ccdtree():
     ccd_tree = cKDTree(ccd_query)
     return ccd_tree, ccd_keys
 
-@numba.njit('b1(f8,f8,f8[:,:])')
+@numba.njit(['b1(f8,f8,f8[:,:])', 'b1(f4,f4,f8[:,:])'], cache = True)
 def ray_tracing(x,y,poly):
     ''' 
     2D Ray tracing algorithm that tests if a point is inside the poly(gon) coordinates given
