@@ -187,7 +187,8 @@ class Survey:
 		- track: Path of FITS file containing the exposures for use with $ORBITSPP
 		- corners: Path of CCD corners FITS file containing the CCD corners of all exposures for use with $ORBITSPP
 		'''
-		self.ra = ra 
+		self.ra = ra
+		self.ra[self.ra > 180] -= 360 
 		self.dec = dec 
 		self.mjd = mjd 
 		self.expnum = expnum
@@ -296,17 +297,19 @@ class Survey:
 		sim.add_spacerocks(rocks)
 		sim.integrator = 'leapfrog'
 
-		lons = []
-		lats = []
-
+		ras = np.array([])
+		decs = np.array([])
+		orbitid = np.array([])
+		expnum = np.array([]) 
+		oidlist = np.arange(len(population))
 		if progress == True:
 			from rich.progress import track
-			epochs = track(self.times.jd)
+			epochs = track(range(len(self.times.jd)))
 		else:
-			epochs = self.times.jd
+			epochs = range(len(self.times.jd))
 
-		for epoch in epochs:
-			sim.integrate(epoch, exact_finish_time=1)
+		for i in epochs:
+			sim.integrate(self.times.jd[i], exact_finish_time=1)
 			a = np.zeros((sim.N, 3), dtype=np.double)
 			b = np.zeros((sim.N, 3), dtype=np.double)
 			sim.serialize_particle_data(xyz=a, vxvyvz=b)
@@ -320,7 +323,7 @@ class Survey:
 			vy = np.ascontiguousarray(vy)[sim.N_active:]
 			vz = np.ascontiguousarray(vz)[sim.N_active:]
 
-			observer = Observer(epoch=epoch, obscode='W84', units=units)
+			observer = Observer(epoch=self.times.jd[i], obscode='W84', units=units)
 			ox = observer.x.au.astype(np.double)
 			oy = observer.y.au.astype(np.double)
 			oz = observer.z.au.astype(np.double)
@@ -332,50 +335,59 @@ class Survey:
 			xt, yt, zt = correct_for_ltt_destnosim(x, y, z, vx, vy, vz, ox, oy, oz, ovx, ovy, ovz)
 			lon = np.arctan2(yt, xt)
 			lat = np.arcsin(zt / np.sqrt(xt**2 + yt**2 + zt**2))
-        	
-			lons.extend(lon)
-			lats.extend(lat)
+			dec = np.degrees(np.arcsin(np.sin(lat) * np.cos(epsilon) + np.cos(lat) * np.sin(lon) * np.sin(epsilon)))
+			ra = np.degrees(np.arctan2((np.cos(lat) * np.cos(epsilon) * np.sin(lon) - np.sin(lat) * np.sin(epsilon)), np.cos(lon) * np.cos(lat)))
 
-		lats = np.array(lats)
-		lons = np.array(lons)
+			ra[ra>180] -= 360
 
-		decs = np.degrees(np.arcsin(np.sin(lats) * np.cos(epsilon) * np.cos(lats) * np.sin(lons) * np.sin(epsilon)))
-		ras = np.degrees(np.arctan2((np.cos(lats) * np.cos(epsilon) * np.sin(lons) - np.sin(lats) * np.sin(epsilon)), np.cos(lons) * np.cos(lats)))
+			dist_center = np.sqrt( ((ra - self.ra[i]) * np.cos(self.dec[i] * np.pi/180))**2 + (dec - self.dec[i])**2)
 
+			keep = dist_center < 1.1
+
+			ras = np.append(ras, ra[keep])
+			decs = np.append(decs, dec[keep])
+			orbitid = np.append(orbitid, oidlist[keep])
+			expnum = np.append(expnum, len(oidlist[keep]) * [self.expnum[i]])
+
+
+		del x, y, z, vx, vy, vz, a, b, sim, xt, yt, zt, ox, oy, oz, observer
 		## gather data into something useable
-
 		t = tb.Table()
 		t['RA'] = ras
-		t['RA'][t['RA'] > 180] -= 360
+		del ras
+		#t['RA'][t['RA'] > 180] -= 360
 		t['DEC'] = decs
-		t['EXPNUM'] = len(population) * list(self.expnum)
-		t['ORBITID'] = len(self.expnum) * list(range(len(population)))
+		del decs
+		t['EXPNUM'] = expnum
+		t['EXPNUM'] = t['EXPNUM'].astype('int32')
+		del expnum
+		t['ORBITID'] = orbitid
+		t['ORBITID'] = t['ORBITID'].astype('int64')
+		del orbitid
 
 		exp = tb.Table()
 		exp['EXPNUM'] = np.array(self.expnum)
 		exp['RA_CENTER'] = np.array(self.ra)
-		exp['RA_CENTER'][exp['RA_CENTER'] > 180] -= 360
+		#exp['RA_CENTER'][exp['RA_CENTER'] > 180] -= 360
 		exp['DEC_CENTER'] = np.array(self.dec) 
-
+		#return t, exp
 		t = tb.join(t, exp)
-		t['DELTA'] = np.sqrt( (( t['RA'] - t['RA_CENTER']) * np.cos(t['DEC_CENTER'] * np.pi/180))**2 +  (t['DEC'] - t['DEC_CENTER'])**2)
 
-		t = t[t['DELTA'] < 1.5]
-
-		theta = bulk_gnomonic(np.array(t['RA']), np.array(t['DEC']), np.array(t['RA_CENTER']), np.array(t['DEC_CENTER']))
+		
+		x, y = bulk_gnomonic(np.array(t['RA']), np.array(t['DEC']), np.array(t['RA_CENTER']), np.array(t['DEC_CENTER']))
 		#rescale for kD tree
-		theta[:,1] *= 2
+		theta = np.array([x, 2*y]).T
+		del t['RA_CENTER', 'DEC_CENTER']
 
 		ccd_tree, ccd_keys = create_ccdtree()
 
 		tree = cKDTree(theta)
 		# kD tree ccd checker
-		inside_CCD = ccd_tree.query_ball_tree(tree, 0.149931 * 1.001, p = np.inf)
-		
-		if inside_CCD != None: 
-			ccd_id = [len(inside_CCD[i])*[ccdnums[ccd_keys[i]]] for i in range(len(inside_CCD)) if len(inside_CCD[i]) > 0]
-			inside_CCD = np.array(list(chain(*inside_CCD)))
-			if len(inside_CCD) > 0:
+		inside_ccd = ccd_tree.query_ball_tree(tree, 0.149931 * 1.01, p = np.inf)
+		if inside_ccd != None: 
+			ccd_id = [len(inside_ccd[i])*[ccdnums[ccd_keys[i]]] for i in range(len(inside_ccd)) if len(inside_ccd[i]) > 0]
+			inside_ccd = np.array(list(chain(*inside_ccd)))
+			if len(inside_ccd) > 0:
 				ccdlist = list(chain(*ccd_id))
 			else:
 				print('No observations!')
@@ -386,9 +398,11 @@ class Survey:
 			self.population = tb.Table(column=['RA', 'DEC', 'EXPNUM', 'ORBITID'])
 			return None 
 
-		t = t[inside_CCD]
+		outside_ccd = np.arange(len(t))
+		outside_ccd = outside_ccd[np.isin(outside_ccd, inside_ccd, invert = True)]
+		outccd = t[outside_ccd]
+		t = t[inside_ccd]
 		t['CCDNUM'] = ccdlist
-
 
 		# we need the exposure objects here for the proper CCD stuff
 
@@ -403,7 +417,6 @@ class Survey:
 
 		inside_ccd = np.zeros(len(t), dtype='bool')
 
-
 		for i in range(len(t)):
 
 			# proper corners
@@ -414,8 +427,12 @@ class Survey:
 
 			inside_ccd[i] = ins 
 
+		outccd = tb.vstack([outccd, t[~inside_ccd]])
+		outccd['CCDNUM'] = 0
+		outccd = tb.unique(outccd)
 
 		obs = t[inside_ccd]
+		obs = tb.vstack([t, outccd])
 		obs.sort(['ORBITID','EXPNUM'])
 
 		population.observations = obs['RA', 'DEC', 'EXPNUM', 'CCDNUM', 'ORBITID']
@@ -456,6 +473,7 @@ class Survey:
 
 		for i in corners:
 			rac = i['ra'][:-1]
+			rac[rac>180] -= 360 
 			decc = i['dec'][:-1]
 
 			self.exposures[i['expnum']].corners[i['ccdnum']] = np.array([rac,decc]).T

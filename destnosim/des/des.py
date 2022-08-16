@@ -161,7 +161,7 @@ class DES(Survey):
 		Initialization function
 
 		Arguments:
-		- release: name for the release, all data files need be of the form release.EXTENSION
+		- release: name of the release, all data files need be of the form release.EXTENSION
 		'''
 		orbdata = os.getenv('DESDATA')
 

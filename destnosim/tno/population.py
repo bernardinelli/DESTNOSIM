@@ -189,7 +189,7 @@ class Population:
 		r = dist_to_point(self.elements, self.epoch, self.elementType, point, helio, ecliptic)
 		return r 
 
-	def computeStatistics(self, thresh = 90., transient_efficiency = 0.95529):
+	def computeStatistics(self, thresh = 90., transient_efficiency = 0.95529, drop_zero = True, linking_eff = 1):
 		'''
 		Computes ARC, ARCCUT and NUNIQUE for each member of the population and stores inside population.statistics. Requires a preliminary survey.observePopulation call
 
@@ -204,9 +204,10 @@ class Population:
 
 
 		#consider only detections inside a CCD
-		ccdzero = np.where(self.detections['CCDNUM'] == 0)
-		if len(ccdzero) > 0:
-			self.detections.remove_rows(np.where(self.detections['CCDNUM'] == 0))
+		if drop_zero:
+			ccdzero = np.where(self.detections['CCDNUM'] == 0)
+			if len(ccdzero) > 0:
+				self.detections.remove_rows(np.where(self.detections['CCDNUM'] == 0))
 
 		#transient efficiency
 		if 'RANDOM' not in self.detections.keys():
@@ -263,6 +264,8 @@ class Population:
 
 		stat = tb.vstack(stack)
 		stat.sort('ORBITID')
+
+		stat['RANDOM'] = np.random.random(len(stat)) < linking_eff
 
 		self.statistics = stat
 

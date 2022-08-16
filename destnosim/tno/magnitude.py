@@ -45,7 +45,7 @@ def detprob_logit(m, params):
     - m: magnitude argument
     - params: tuple with m50, k and c
     '''
-    m50, c, k = params
+    m50, k, c = params
     logit = c/(1+np.exp(k*(m-m50)))
     return logit
 
@@ -57,11 +57,25 @@ def detprob_double(m, params):
      Arguments:
     - m: magnitude argument
     - params: tuple with m0, k1, k2 and c
-
     '''
-    m50, c, k1, k2 = params
+    m50, k1, k2, c = params
     logit = c/(1+np.exp(k1*(m-m50)))/(1+np.exp(k2*(m-m50)))
     return logit
+
+def detprob_piecewise(x, params, split):
+	'''
+	Piecewise logit function
+	params = (r50_1, r50_2, kappa1, kappa2, c)
+
+	Arguments:
+	- m: magnitude argument
+	- params: tuple with r50_1, c, r50_2, kappa1 and kappa2 
+	'''
+
+	r50_1, r50_2, kappa1, kappa2, c = params
+	p1 = lambda x : detprob_logit(x, [r50_1, kappa1, c])
+	p2 = lambda x : detprob_logit(x, [r50_2, kappa2, c])
+	return np.piecewise(x,  [x<split, x>=split], [p1, p2])
 
 
 def minusLogP(params, mdet, mnon, res_collect, detprob):
@@ -78,12 +92,12 @@ def minusLogP(params, mdet, mnon, res_collect, detprob):
     - detprob: functional form (eg detprob_logit or detprob_double)
     '''
 
-    if params[1] > 1.:
+    if params[-1] > 1.:
         # this ensures that c cannot continue to rise above 1 by referencing 
         # the value of the previous trial in the optimizer
-        res_collect.append(res_collect[-1] + (params[1] - 1.)*1e5)
+        res_collect.append(res_collect[-1] + (params[-1] - 1.)*1e5)
         return res_collect[-1] + 1e7
-    elif params[1] <= 0.:
+    elif params[-1] <= 0.:
         return res_collect[-1] + 1e7
     else:
         pdet = detprob(mdet,params)

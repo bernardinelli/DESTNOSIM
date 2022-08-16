@@ -88,11 +88,11 @@ def bulk_gnomonic(ra, dec, ra_0, dec_0):
 
     cos_c = s_dec_0*s_dec + c_dec_0*c_dec*c_ra
 
-    theta = np.zeros((len(ra), 2))
-    theta[:,0] = c_dec*s_ra/cos_c
-    theta[:,1] = (c_dec_0*s_dec - s_dec_0*c_dec*c_ra)/cos_c
+    #theta = np.zeros((len(ra), 2))
+    x = c_dec*s_ra/cos_c
+    y = (c_dec_0*s_dec - s_dec_0*c_dec*c_ra)/cos_c
 
-    return theta * 180/np.pi
+    return x * 180/np.pi, y * 180/np.pi
 
 
 

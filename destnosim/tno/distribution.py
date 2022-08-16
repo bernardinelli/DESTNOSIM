@@ -263,7 +263,8 @@ class BrokenPowerLaw(AnalyticDistribution):
 			x_norm = (x_min + x_max)/2
 		self.x_norm = x_norm
 
-		self.f = lambda x : np.piecewise(x, [ x <= self.x_break, x > self.x_break], [lambda x: np.power(x/x_norm, self.slope_1), lambda x: np.power(x/x_norm, self.slope_2) * np.power(self.x_break/x_norm, self.slope_1 - self.slope_2)])
+		self.f = lambda x : np.piecewise(x, [ x <= self.x_break, x > self.x_break], [lambda x: np.power(x - x_norm, self.slope_1), 
+														lambda x: np.power(x - x_norm, self.slope_2) * np.power(self.x_break - x_norm, self.slope_1 - self.slope_2)])
 	
 		AnalyticDistribution.__init__(self, x_min, x_max, self.f)
 

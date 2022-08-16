@@ -52,7 +52,7 @@ def compute_nunique(times):
 	for i in range(n):
 		unique = True
 		for j in range(0, i):
-			if abs(times[j] - times[i]) < 0.1:
+			if abs(times[j] - times[i]) < 0.4:
 				unique = False 
 		if unique:
 			nunique += 1
@@ -79,7 +79,7 @@ def compute_triplet(times, thresh):
 	n = len(times)
 
 	for i in range(n-1):
-		if times[i + 1] - times[i] > 0.1:
+		if times[i + 1] - times[i] > 0.4:
 			det.append(times[i+1])
 	
 	n = len(det)
@@ -113,7 +113,7 @@ def find_triplet_time(times):
 	n = len(times)
 
 	for i in range(n-1):
-		if times[i + 1] - times[i] > 0.1:
+		if times[i + 1] - times[i] > 0.4:
 			det.append(times[i+1])
 	
 	n = len(det)
