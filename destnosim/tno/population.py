@@ -222,8 +222,7 @@ class Population:
 
 		for i in ids[counts > 1]:
 			obj = self.detections.loc[i]
-			times = np.array(obj['MJD']) 
-			times.dtype = 'f8'
+			times = np.array(obj['MJD'], dtype='float64') 
 			times.sort()
 			arc = np.max(times) - np.min(times)
 			arccut = compute_arccut(times)
