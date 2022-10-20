@@ -223,6 +223,7 @@ class Population:
 		for i in ids[counts > 1]:
 			obj = self.detections.loc[i]
 			times = np.array(obj['MJD']) 
+			times.dtype = 'f8'
 			times.sort()
 			arc = np.max(times) - np.min(times)
 			arccut = compute_arccut(times)
@@ -631,6 +632,7 @@ class IsotropicPopulation(CartesianPopulation):
 		self.hasRADec = True
 		if drop_outside:
 			self.checkInFootprint(footprint)
+			self.n_grid = int(self.n_objects/2)
 		self._generateVelocityShell()
 		
 		self.ecliptic = ecliptic
