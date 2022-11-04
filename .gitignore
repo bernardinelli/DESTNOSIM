@@ -1,8 +1,7 @@
 *.pyc
 .DS_Store
 *.csv
-Notebooks/.ipynb_checkpoints/Clustering of ETNOs-checkpoint.ipynb
-Notebooks/.ipynb_checkpoints/MPC observations-checkpoint.ipynb
+Notebooks/.ipynb_checkpoints/*
 Notebooks/Clustering of ETNOs.ipynb
 *.txt
 Notebooks/MPC observations.ipynb
@@ -26,3 +25,6 @@ tno/Leap_Second.dat
 build/
 Examples/.ipynb_checkpoints/
 dist/
+
+__pycache__/
+*/__pycache__/

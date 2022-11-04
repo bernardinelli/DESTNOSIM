@@ -241,8 +241,9 @@ class DEEP(Survey):
 		r = [] 
 		for i in self.pg['POINTING_GROUP']:
 			rate = self.pointing_groups[i].calculateRate(population, expmin, ccdmask, compute_mag = True)
-			rate['POINTING_GROUP'] = i
-			r.append(rate)
+			if len(rate) > 0:
+				rate['POINTING_GROUP'] = i
+				r.append(rate)
 
 		r = tb.vstack(r)
 
