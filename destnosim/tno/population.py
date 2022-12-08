@@ -99,14 +99,15 @@ class Population:
 		mag_table['ORBITID'] = range(self.n_objects)
 
 		if mag_type == 'absolute':
-			self.distanceToCenter(helio, ecliptic)
-			sun_dist = self.r
-			obs_dist = self.distanceToPoint(observer_pos, helio, ecliptic)
+			if not hasattr(self, 'r'):
+				self.distanceToCenter(helio, ecliptic)
+				self.delta = self.distanceToPoint(observer_pos, helio, ecliptic)
 
-			mag_table['m_' + band] = mag_band + 5 * np.log10(sun_dist * obs_dist)
+			mag_table['m_' + band] = mag_band + 5 * np.log10(self.r * self.delta)
+			mag_table['H_' + band] = mag_band
 
 			for i in colors:
-				mag_table['m_' + i] = mag_band - colors[i]  + 5 * np.log10(sun_dist * obs_dist)
+				mag_table['m_' + i] = mag_band - colors[i]  + 5 * np.log10(self.r * self.delta)
 
 		self.mag = mag_table
 
