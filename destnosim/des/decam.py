@@ -302,6 +302,8 @@ class Survey:
 		orbitid = np.array([])
 		expnum = np.array([]) 
 		oidlist = np.arange(len(population))
+		obscode = Observer.from_obscode(obscode='W84')
+
 		if progress == True:
 			from rich.progress import track
 			epochs = track(range(len(self.times.jd)))
@@ -323,7 +325,7 @@ class Survey:
 			vy = np.ascontiguousarray(vy)[sim.N_active:]
 			vz = np.ascontiguousarray(vz)[sim.N_active:]
 
-			observer = Observer(epoch=self.times.jd[i], obscode='W84', units=units)
+			observer = obscode.at(self.times.jd[i])
 			ox = observer.x.au.astype(np.double)
 			oy = observer.y.au.astype(np.double)
 			oz = observer.z.au.astype(np.double)
@@ -484,3 +486,105 @@ class Survey:
 
 
 
+class GenericSurvey(Survey):
+	def createObservationsSpacerocks(self, population, obscode='W84', radius=1.5, progress=True):
+		## first set up times and do spacerock stuff
+
+		#self.createEarthSpaceRock()
+		self.times = Time(self.mjd, format='mjd', scale='utc')
+		rocks = population.generateSpaceRocks()
+
+		units = Units()
+		units.timescale = 'utc'
+		units.timeformat = 'jd'
+		units.mass = u.M_sun
+		
+		spiceids, kernel, masses = builtin_models['ORBITSPP']
+		model = PerturberModel(spiceids=spiceids, masses=masses)
+		
+		sim = Simulation(model=model, epoch=self.times.jd[0], units=units)
+		sim.add_spacerocks(rocks)
+		sim.integrator = 'leapfrog'
+
+		ras = np.array([])
+		decs = np.array([])
+		orbitid = np.array([])
+		expnum = np.array([]) 
+		oidlist = np.arange(len(population))
+  
+		obscode = Observer.from_obscode(obscode=obscode)
+		if progress == True:
+			from rich.progress import track
+			epochs = track(range(len(self.times.jd)))
+		else:
+			epochs = range(len(self.times.jd))
+
+		for i in epochs:
+			sim.integrate(self.times.jd[i], exact_finish_time=1)
+			a = np.zeros((sim.N, 3), dtype=np.double)
+			b = np.zeros((sim.N, 3), dtype=np.double)
+			sim.serialize_particle_data(xyz=a, vxvyvz=b)
+			x, y, z = a.T
+			vx, vy, vz = b.T
+		
+			x = np.ascontiguousarray(x)[sim.N_active:]
+			y = np.ascontiguousarray(y)[sim.N_active:]
+			z = np.ascontiguousarray(z)[sim.N_active:]
+			vx = np.ascontiguousarray(vx)[sim.N_active:]
+			vy = np.ascontiguousarray(vy)[sim.N_active:]
+			vz = np.ascontiguousarray(vz)[sim.N_active:]
+
+			observer = obscode.at(self.times.jd[i])
+			ox = observer.x.au.astype(np.double)
+			oy = observer.y.au.astype(np.double)
+			oz = observer.z.au.astype(np.double)
+			ovx = observer.vx.value.astype(np.double)
+			ovy = observer.vy.value.astype(np.double)
+			ovz = observer.vz.value.astype(np.double)
+			
+			# Compute ltt-corrected topocentroc Ecliptic coordinates
+			xt, yt, zt = correct_for_ltt_destnosim(x, y, z, vx, vy, vz, ox, oy, oz, ovx, ovy, ovz)
+			lon = np.arctan2(yt, xt)
+			lat = np.arcsin(zt / np.sqrt(xt**2 + yt**2 + zt**2))
+			dec = np.degrees(np.arcsin(np.sin(lat) * np.cos(epsilon) + np.cos(lat) * np.sin(lon) * np.sin(epsilon)))
+			ra = np.degrees(np.arctan2((np.cos(lat) * np.cos(epsilon) * np.sin(lon) - np.sin(lat) * np.sin(epsilon)), np.cos(lon) * np.cos(lat)))
+
+			ra[ra>180] -= 360
+
+			dist_center = np.sqrt( ((ra - self.ra[i]) * np.cos(self.dec[i] * np.pi/180))**2 + (dec - self.dec[i])**2)
+
+			keep = dist_center < radius
+
+			ras = np.append(ras, ra[keep])
+			decs = np.append(decs, dec[keep])
+			orbitid = np.append(orbitid, oidlist[keep])
+			expnum = np.append(expnum, len(oidlist[keep]) * [self.expnum[i]])
+
+
+		del x, y, z, vx, vy, vz, a, b, sim, xt, yt, zt, ox, oy, oz, observer
+		## gather data into something useable
+		t = tb.Table()
+		t['RA'] = ras
+		del ras
+		#t['RA'][t['RA'] > 180] -= 360
+		t['DEC'] = decs
+		del decs
+		t['EXPNUM'] = expnum
+		t['EXPNUM'] = t['EXPNUM'].astype('int32')
+		del expnum
+		t['ORBITID'] = orbitid
+		t['ORBITID'] = t['ORBITID'].astype('int64')
+		del orbitid
+
+		exp = tb.Table()
+		exp['EXPNUM'] = np.array(self.expnum)
+		exp['RA_CENTER'] = np.array(self.ra)
+		#exp['RA_CENTER'][exp['RA_CENTER'] > 180] -= 360
+		exp['DEC_CENTER'] = np.array(self.dec) 
+		#return t, exp
+		t = tb.join(t, exp)
+
+		
+		t.sort(['ORBITID','EXPNUM'])
+
+		population.observations = t['RA', 'DEC', 'EXPNUM', 'ORBITID']
